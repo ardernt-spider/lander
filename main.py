@@ -23,21 +23,14 @@ globals()['keyboard'] = keyboard
 
 from datetime import datetime
 
-# Helper to locate bundled resources (works with PyInstaller)
-def resource_path(relative_path: str) -> str:
-    """Return absolute path to resource, works for development and PyInstaller bundles.
+# Import a small constants module (low-risk refactor)
+from constants import (
+    MAX_TOP_SCORES, DEFAULT_PLAYER_NAME, TARGET_RATIO,
+    key_repeat_delay, key_repeat_interval, TARGET_FPS, TITLE
+)
 
-    Usage: resource_path('assets/lander.png')
-    """
-    try:
-        # PyInstaller creates a temp folder and stores path in _MEIPASS
-        base_path = sys._MEIPASS  # type: ignore[attr-defined]
-    except Exception:
-        base_path = os.path.dirname(os.path.abspath(__file__))
-    return os.path.join(base_path, relative_path)
-
-MAX_TOP_SCORES = 10
-DEFAULT_PLAYER_NAME = "Player"
+# Asset helpers
+from assets import load_image, resource_path
 
 # --- Persistent storage configuration ---
 def get_data_dir():
@@ -471,8 +464,8 @@ def draw_lander(surface):
     # Prepare asset path (always defined for error reporting)
     lander_path = os.path.join('assets', 'lander.png')
     try:
-        full_lander_path = resource_path(lander_path)
-        lander_sprite = pygame.image.load(full_lander_path).convert_alpha()
+        # Use central asset loader (handles PyInstaller bundles)
+        lander_sprite = load_image(lander_path)
         # Create a simple flame sprite
         flame_size = (32, 48)
         flame_sprite = pygame.Surface(flame_size, pygame.SRCALPHA)
