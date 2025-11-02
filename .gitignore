@@ -101,3 +101,6 @@ scores.json
 
 # Ruff
 .ruff-cache/
+
+# pytest
+.pytest_cache/
