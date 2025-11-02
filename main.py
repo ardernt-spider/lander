@@ -10,9 +10,21 @@ This is intentionally lightweight: no external assets, draws the lander as a pol
 """
 import math
 import random
-import pgzero
-import pgzrun
 import pygame
+from pygame.constants import *
+import pygame.font
+from pgzero.keyboard import keyboard
+
+# Make keyboard available globally
+globals()['keyboard'] = keyboard
+
+# Initialize Pygame
+pygame.init()
+pygame.font.init()
+
+# Create game window
+DISPLAY = pygame.display.set_mode((800, 600))
+FONT = pygame.font.SysFont(None, 24)
 
 WIDTH = 800
 HEIGHT = 600
@@ -155,12 +167,11 @@ def draw_lander(surface):
         ry = x * sinr + y * cosr
         rot_pts.append((cx + rx, cy + ry))
 
-    #screen.draw.filled_polygon(rot_pts, 'white')
-    #screen.draw.polygon(rot_pts, 'black')
-    #pygame.draw.polygon(screen.surface, (255, 255, 255), rot_pts, 1)
-    pygame.draw.polygon(screen.surface, (0, 128, 255), rot_pts, 5)
+    # Draw lander body
+    pygame.draw.polygon(surface, (255, 255, 255), rot_pts, 0)  # Filled
+    pygame.draw.polygon(surface, (0, 0, 0), rot_pts, 2)  # Outline
 
-    # fuel flame if thrusting
+    # Draw fuel flame if thrusting
     if (keyboard.space or keyboard.up) and fuel > 0 and alive and not landed:
         # flame points
         flame_pts = [(-6, size * 0.8 + 6), (0, size * 1.6 + random.uniform(-6, 6)), (6, size * 0.8 + 6)]
@@ -169,45 +180,61 @@ def draw_lander(surface):
             rx = x * cosr - y * sinr
             ry = x * sinr + y * cosr
             rot_flame.append((cx + rx, cy + ry))
-        #screen.draw.filled_polygon(rot_flame, (255, 120, 20))
-        pygame.draw.polygon(screen.surface, (255, 0, 0), rot_flame, 5)
+        pygame.draw.polygon(surface, (255, 120, 20), rot_flame, 0)  # Filled flame
 
 
 def draw():
-    screen.fill((10, 10, 30))
+    DISPLAY.fill((10, 10, 30))
 
     # Stars
     for i in range(40):
         # lightweight pseudo-random stars using pad_x as seed (stable per frame)
         sx = (i * 37 + pad_x) % WIDTH
         sy = (i * 53 + pad_x) % (HEIGHT - 200)
-        # screen.draw.pixel((sx, sy), 'white')
-        screen.surface.set_at((sx, sy), (255,255,255))
+        DISPLAY.set_at((sx, sy), (255,255,255))
 
     # Moon surface
     surface_y = HEIGHT - 40
-    screen.draw.filled_rect(Rect((0, surface_y), (WIDTH, HEIGHT - surface_y)), (80, 80, 80))
+    pygame.draw.rect(DISPLAY, (80, 80, 80), pygame.Rect(0, surface_y, WIDTH, HEIGHT - surface_y))
 
     # Landing pad
-    screen.draw.filled_rect(Rect((pad_x, pad_y), (pad_width, pad_height)), 'yellow')
-    screen.draw.rect(Rect((pad_x, pad_y), (pad_width, pad_height)), 'black')
+    pygame.draw.rect(DISPLAY, (255, 255, 0), pygame.Rect(pad_x, pad_y, pad_width, pad_height))
+    pygame.draw.rect(DISPLAY, (0, 0, 0), pygame.Rect(pad_x, pad_y, pad_width, pad_height), 1)
 
     # Lander
-    draw_lander(screen)
+    draw_lander(DISPLAY)
 
     # HUD
-    screen.draw.text(TITLE, (10, 10), fontsize=28, color='white')
-    screen.draw.text(f"Fuel: {fuel:.0f}", (10, 42), fontsize=20, color='white')
-    screen.draw.text(f"Pos: {lander_pos[0]:.0f}, {lander_pos[1]:.0f}", (10, 66), fontsize=16, color='white')
-    screen.draw.text(f"Vel: {lander_vel[0]:.1f}, {lander_vel[1]:.1f}", (10, 86), fontsize=16, color='white')
-    screen.draw.text(f"Angle: {lander_angle:.1f}\u00B0", (10, 106), fontsize=16, color='white')
-    screen.draw.text(f"Pad X: {pad_x:.1f}\u00B0", (10, 126), fontsize=16, color='white')
-
+    text = FONT.render(TITLE, True, (255, 255, 255))
+    DISPLAY.blit(text, (10, 10))
+    
+    text = FONT.render(f"Fuel: {fuel:.0f}", True, (255, 255, 255))
+    DISPLAY.blit(text, (10, 42))
+    
+    text = FONT.render(f"Pos: {lander_pos[0]:.0f}, {lander_pos[1]:.0f}", True, (255, 255, 255))
+    DISPLAY.blit(text, (10, 66))
+    
+    text = FONT.render(f"Vel: {lander_vel[0]:.1f}, {lander_vel[1]:.1f}", True, (255, 255, 255))
+    DISPLAY.blit(text, (10, 86))
+    
+    text = FONT.render(f"Angle: {lander_angle:.1f}°", True, (255, 255, 255))
+    DISPLAY.blit(text, (10, 106))
+    
+    text = FONT.render(f"Pad X: {pad_x:.1f}", True, (255, 255, 255))
+    DISPLAY.blit(text, (10, 126))
 
     if landed:
-        screen.draw.text("LANDED! Press R to play again.", center=(WIDTH / 2, HEIGHT / 2), fontsize=40, color='lime')
+        text = FONT.render("LANDED! Press R to play again.", True, (0, 255, 0))
+        text_rect = text.get_rect(center=(WIDTH / 2, HEIGHT / 2))
+        DISPLAY.blit(text, text_rect)
+        
     if crashed:
-        screen.draw.text("CRASHED! Press R to try again.", center=(WIDTH / 2, HEIGHT / 2), fontsize=40, color='red')
+        text = FONT.render("CRASHED! Press R to try again.", True, (255, 0, 0))
+        text_rect = text.get_rect(center=(WIDTH / 2, HEIGHT / 2))
+        DISPLAY.blit(text, text_rect)
+    
+    # Update display
+    pygame.display.flip()
 
 
 def update():
