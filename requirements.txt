@@ -1,4 +1,6 @@
-pgzero>=1.2
-pygame>=2.0
-pyinstaller>=6.0
-pillow>=10.0
+pgzero~=1.2
+pygame~=2.0
+pyinstaller~=6.0
+pillow~=10.0
+pytest~=7.4
+pytest-cov~=4.1  # For coverage reporting
