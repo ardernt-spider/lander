@@ -43,6 +43,10 @@ fuel = 100.0
 alive = True
 landed = False
 crashed = False
+score = 0
+high_score = 0
+mission_start_time = 0
+last_landing_stats = None  # To store stats of the last landing
 
 # Landing pad
 pad_width = 120
@@ -62,7 +66,7 @@ TITLE = "Lunar Lander"
 
 
 def reset():
-    global lander_pos, lander_vel, lander_angle, fuel, alive, landed, crashed, pad_x
+    global lander_pos, lander_vel, lander_angle, fuel, alive, landed, crashed, pad_x, score, mission_start_time, last_landing_stats
     lander_pos = [WIDTH * 0.5, 100.0]
     lander_vel = [0.0, 0.0]
     lander_angle = 0.0
@@ -70,6 +74,9 @@ def reset():
     alive = True
     landed = False
     crashed = False
+    score = 0
+    mission_start_time = pygame.time.get_ticks()
+    last_landing_stats = None
     pad_x = random.randint(80, WIDTH - 80 - pad_width)
 
 
@@ -125,8 +132,50 @@ def apply_physics(dt):
         lander_vel[0] = 0
 
 
+def calculate_landing_score(vx, vy, landing_x, mission_time):
+    global high_score, last_landing_stats
+    
+    # Base score for successful landing
+    score = 1000
+
+    # Speed bonus (better score for softer landing)
+    speed = math.sqrt(vx*vx + vy*vy)
+    speed_score = int(500 * (1.0 - min(1.0, speed/60.0)))
+    
+    # Position bonus (better score for landing closer to pad center)
+    pad_center = pad_x + pad_width/2
+    distance_from_center = abs(landing_x - pad_center)
+    position_score = int(300 * (1.0 - min(1.0, distance_from_center/(pad_width/2))))
+    
+    # Fuel bonus
+    fuel_score = int(fuel * 2)  # 2 points per unit of fuel remaining
+    
+    # Time bonus (faster landing = better score)
+    time_score = int(1000 * min(1.0, 30000/max(1000, mission_time)))
+    
+    total_score = score + speed_score + position_score + fuel_score + time_score
+    
+    # Store landing stats
+    last_landing_stats = {
+        'total': total_score,
+        'base': score,
+        'speed': speed_score,
+        'position': position_score,
+        'fuel': fuel_score,
+        'time': time_score,
+        'speed_value': speed,
+        'distance': distance_from_center,
+        'mission_time': mission_time
+    }
+    
+    # Update high score
+    if total_score > high_score:
+        high_score = total_score
+    
+    return total_score
+
 def check_collision():
-    global alive, landed, crashed
+    global alive, landed, crashed, score
     # Simple collision with surface
     surface_y = HEIGHT - 40
     if lander_pos[1] + lander_size / 2 >= surface_y:
@@ -144,43 +193,72 @@ def check_collision():
             lander_pos[1] = surface_y - lander_size / 2
             lander_vel[0] = 0
             lander_vel[1] = 0
+            # Calculate score
+            mission_time = pygame.time.get_ticks() - mission_start_time
+            score = calculate_landing_score(vx, vy, lander_pos[0], mission_time)
         else:
             crashed = True
             alive = False
             lander_vel[0] = 0
             lander_vel[1] = 0
             lander_pos[1] = surface_y - lander_size / 2
+            score = 0  # No score for crashing
 
 
 def draw_lander(surface):
-    # draw a simple triangular lander centered at lander_pos, rotated by lander_angle
+    global lander_sprite, flame_sprite
+    
+    # Load sprites if not already loaded
+    if 'lander_sprite' not in globals():
+        try:
+            lander_sprite = pygame.image.load('assets/lander.png').convert_alpha()
+            # Create a simple flame sprite
+            flame_size = (32, 48)
+            flame_sprite = pygame.Surface(flame_size, pygame.SRCALPHA)
+            flame_points = [(16, 0), (32, 48), (0, 48)]
+            pygame.draw.polygon(flame_sprite, (255, 120, 20), flame_points, 0)
+        except FileNotFoundError:
+            print("Error: Could not find lander.png in assets folder!")
+            return
+    
+    # Get the rect for positioning
     cx, cy = lander_pos
-    size = lander_size
-    # base triangle pointing up (0 deg)
-    pts = [(-size * 0.6, size * 0.8), (0, -size), (size * 0.6, size * 0.8)]
-    rad = math.radians(lander_angle)
-    cosr = math.cos(rad)
-    sinr = math.sin(rad)
-    rot_pts = []
-    for x, y in pts:
-        rx = x * cosr - y * sinr
-        ry = x * sinr + y * cosr
-        rot_pts.append((cx + rx, cy + ry))
-
-    # Draw lander body
-    pygame.draw.polygon(surface, (255, 255, 255), rot_pts, 0)  # Filled
-    pygame.draw.polygon(surface, (0, 0, 0), rot_pts, 2)  # Outline
-
-    # Draw fuel flame if thrusting
+    sprite_rect = lander_sprite.get_rect()
+    sprite_rect.center = (cx, cy)
+    
+    # Rotate the sprite
+    rotated_lander = pygame.transform.rotate(lander_sprite, -lander_angle)  # Negative angle for clockwise rotation
+    rotated_rect = rotated_lander.get_rect(center=sprite_rect.center)
+    
+    # Draw the lander
+    surface.blit(rotated_lander, rotated_rect)
+    
+    # Draw flame if thrusting
     if (keyboard.space or keyboard.up) and fuel > 0 and alive and not landed:
-        # flame points
-        flame_pts = [(-6, size * 0.8 + 6), (0, size * 1.6 + random.uniform(-6, 6)), (6, size * 0.8 + 6)]
-        rot_flame = []
-        for x, y in flame_pts:
-            rx = x * cosr - y * sinr
-            ry = x * sinr + y * cosr
-            rot_flame.append((cx + rx, cy + ry))
-        pygame.draw.polygon(surface, (255, 120, 20), rot_flame, 0)  # Filled flame
+        # Calculate flame position based on lander's angle
+        rad = math.radians(lander_angle)
+        offset = 20  # Distance from lander center to flame start
+        
+        # Calculate flame base position (at bottom of lander based on angle)
+        flame_base_x = cx - math.sin(rad) * offset
+        flame_base_y = cy + math.cos(rad) * offset
+        
+        # Create flame points relative to base position
+        flame_length = 30 * (0.8 + random.random() * 0.4)  # Animated length
+        flame_width = 16
+        
+        flame_points = [
+            (flame_base_x, flame_base_y),  # Top point
+            (flame_base_x - math.sin(rad - 0.5) * flame_width,  # Left point
+             flame_base_y + math.cos(rad - 0.5) * flame_width),
+            (flame_base_x - math.sin(rad) * flame_length,      # Bottom point
+             flame_base_y + math.cos(rad) * flame_length),
+            (flame_base_x - math.sin(rad + 0.5) * flame_width,  # Right point
+             flame_base_y + math.cos(rad + 0.5) * flame_width),
+        ]
+        
+        # Draw flame
+        pygame.draw.polygon(surface, (255, 120, 20), flame_points, 0)
 
 
 def draw():
@@ -223,10 +301,42 @@ def draw():
     text = FONT.render(f"Pad X: {pad_x:.1f}", True, (255, 255, 255))
     DISPLAY.blit(text, (10, 126))
 
+    # Show current score and high score
+    if not landed and not crashed:
+        # Show mission time during flight
+        mission_time = (pygame.time.get_ticks() - mission_start_time) // 1000  # Convert to seconds
+        text = FONT.render(f"Mission Time: {mission_time}s", True, (255, 255, 255))
+        DISPLAY.blit(text, (WIDTH - 200, 10))
+
+    text = FONT.render(f"High Score: {high_score}", True, (255, 255, 255))
+    DISPLAY.blit(text, (WIDTH - 200, 34))
+
     if landed:
+        # Main landing message
         text = FONT.render("LANDED! Press R to play again.", True, (0, 255, 0))
-        text_rect = text.get_rect(center=(WIDTH / 2, HEIGHT / 2))
+        text_rect = text.get_rect(center=(WIDTH / 2, HEIGHT / 2 - 80))
         DISPLAY.blit(text, text_rect)
+        
+        # Show landing statistics
+        if last_landing_stats:
+            stats = last_landing_stats
+            y_pos = HEIGHT / 2 - 40
+            stats_color = (200, 200, 100)
+            
+            texts = [
+                f"Final Score: {stats['total']}",
+                f"Base Score: {stats['base']}",
+                f"Speed Bonus: {stats['speed']} (Landing speed: {stats['speed_value']:.1f})",
+                f"Position Bonus: {stats['position']} (Off-center: {stats['distance']:.1f}px)",
+                f"Fuel Bonus: {stats['fuel']} (Fuel left: {fuel:.0f})",
+                f"Time Bonus: {stats['time']} (Mission time: {stats['mission_time']/1000:.1f}s)"
+            ]
+            
+            for line in texts:
+                text = FONT.render(line, True, stats_color)
+                text_rect = text.get_rect(center=(WIDTH / 2, y_pos))
+                DISPLAY.blit(text, text_rect)
+                y_pos += 25
         
     if crashed:
         text = FONT.render("CRASHED! Press R to try again.", True, (255, 0, 0))

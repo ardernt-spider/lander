@@ -1,3 +1,4 @@
 pgzero>=1.2
 pygame>=2.0
 pyinstaller>=6.0
+pillow>=10.0
