@@ -124,19 +124,9 @@ last_landing_stats = None  # To store stats of the last landing
 
 # Player name state
 current_player_name = load_player_name()
-entering_name = False
-name_input = ""
-name_input_time = 0  # For cursor blinking
-show_name_cursor = True
-
-# Key state for text input
-key_input_time = 0
-key_repeat_delay = 500  # ms before key starts repeating
-key_repeat_interval = 50  # ms between repeated characters
-# Per-key repeat tracking to avoid duplicate characters when holding keys
-prev_pressed_keys = set()
-key_last_time = {}        # last time a key produced input (ms)
-key_next_repeat = {}     # next allowed repeat time (ms)
+# Text input handler (name editing)
+from input_handler import TextInputHandler
+text_input = TextInputHandler(repeat_delay=key_repeat_delay, repeat_interval=key_repeat_interval)
 
 # Landing pad (scaled with screen size)
 pad_width = int(120 * SCALE_FACTOR)
@@ -491,18 +481,18 @@ def draw():
         
         return text_rect.bottom + 5  # Return bottom position for next line
         
-    # Name input dialog
-    if entering_name:
+    # Name input dialog (delegated to TextInputHandler)
+    if text_input.entering:
         # Draw semi-transparent overlay
         overlay = pygame.Surface((WIDTH, HEIGHT))
         overlay.fill((0, 0, 0))
         overlay.set_alpha(180)
         DISPLAY.blit(overlay, (0, 0))
-        
+
         # Draw input box
         input_y = HEIGHT * 0.4
         draw_text_with_shadow("Enter Your Name:", (200, 200, 200), (WIDTH/2, input_y), "center")
-        input_text = name_input + ('_' if show_name_cursor else ' ')
+        input_text = text_input.get_display_text()
         draw_text_with_shadow(input_text, (255, 255, 255), (WIDTH/2, input_y + 40), "center")
         draw_text_with_shadow("Press Enter to save, Esc to cancel", (150, 150, 150), (WIDTH/2, input_y + 80), "center")
     
@@ -632,174 +622,28 @@ def draw():
     pygame.display.flip()
 
 
-def handle_text_input():
-    global name_input, current_player_name, entering_name, key_input_time
-    global prev_pressed_keys, key_last_time, key_next_repeat
-
-    if not entering_name:
-        return
-
-    current_time = pygame.time.get_ticks()
-
-    # Safe keyboard attribute checker that also consults pygame key state
-    def key_pressed(k):
-        pressed = False
-        try:
-            pressed = bool(getattr(keyboard, k.lower(), False))
-        except Exception:
-            pressed = False
-
-        # Also check pygame key pressed state for robustness (numeric keypad, etc.)
-        try:
-            kp = pygame.key.get_pressed()
-            # Map simple characters to pygame key constants
-            keycode = None
-            if len(k) == 1 and k.isalpha():
-                keycode = getattr(pygame, f'K_{k}', None)
-                if keycode is None:
-                    keycode = getattr(pygame, f'K_{k.lower()}', None)
-            elif len(k) == 1 and k.isdigit():
-                keycode = getattr(pygame, f'K_{k}', None)
-                if keycode is None:
-                    keycode = getattr(pygame, f'K_KP{k}', None)
-            elif k == ' ':
-                keycode = pygame.K_SPACE
-            elif k == '-':
-                keycode = pygame.K_MINUS
-            elif k == '_':
-                keycode = pygame.K_MINUS
-
-            if keycode is not None and kp[keycode]:
-                pressed = True
-        except Exception:
-            pass
-
-        return pressed
-
-    # Handle confirm/cancel first
-    if key_pressed('return') or keyboard.RETURN:
-        if name_input.strip():  # Don't save empty names
-            current_player_name = name_input.strip()
-            save_player_name(current_player_name)
-        entering_name = False
-        name_input = ""
-        # clear per-key state
-        prev_pressed_keys.clear()
-        return
-    if key_pressed('escape') or keyboard.ESCAPE:
-        entering_name = False
-        name_input = ""
-        prev_pressed_keys.clear()
-        return
-
-    # Allowed characters (lowercase). We'll append as typed (respecting Shift/CapsLock).
-    allowed_chars = 'abcdefghijklmnopqrstuvwxyz0123456789 -_'
-
-    # Modifier state for uppercase and shifted characters
-    mods = 0
-    try:
-        mods = pygame.key.get_mods()
-    except Exception:
-        mods = 0
-    shift_on = bool(mods & (pygame.KMOD_LSHIFT | pygame.KMOD_RSHIFT | pygame.KMOD_SHIFT))
-    caps_on = bool(mods & pygame.KMOD_CAPS)
-
-    # Build set of currently pressed allowed characters
-    pressed_chars = set(k for k in allowed_chars if key_pressed(k))
-    backspace_now = key_pressed('backspace') or key_pressed('BACKSPACE') or keyboard.BACKSPACE
-
-    # BACKSPACE handling with per-key timing
-    if backspace_now:
-        if 'BACKSPACE' not in prev_pressed_keys:
-            # new press
-            if name_input:
-                name_input = name_input[:-1]
-            key_last_time['BACKSPACE'] = current_time
-            key_next_repeat['BACKSPACE'] = current_time + key_repeat_delay
-        else:
-            # held
-            if current_time >= key_next_repeat.get('BACKSPACE', 0) and (
-                current_time - key_last_time.get('BACKSPACE', 0) >= key_repeat_interval):
-                if name_input:
-                    name_input = name_input[:-1]
-                key_last_time['BACKSPACE'] = current_time
-                key_next_repeat['BACKSPACE'] = current_time + key_repeat_interval
-
-    # Character input handling
-    new_presses = pressed_chars - prev_pressed_keys
-    held = pressed_chars & prev_pressed_keys
-
-    # Process new presses immediately
-    for ch in new_presses:
-        if len(name_input) < 15:
-            # Determine actual character considering Shift/CapsLock
-            actual = ch
-            if ch.isalpha():
-                # Uppercase if shift xor caps
-                if shift_on ^ caps_on:
-                    actual = ch.upper()
-            elif ch == '-':
-                if shift_on:
-                    actual = '_'
-            # Append and track timing
-            name_input += actual
-            key_last_time[ch] = current_time
-            key_next_repeat[ch] = current_time + key_repeat_delay
-            # accept only one new char per frame to avoid flooding
-            break
-
-    # Process held keys for repeats
-    if not new_presses:
-        for ch in held:
-            next_time = key_next_repeat.get(ch, 0)
-            last_time = key_last_time.get(ch, 0)
-            if current_time >= next_time and (current_time - last_time) >= key_repeat_interval:
-                if len(name_input) < 15:
-                    actual = ch
-                    if ch.isalpha():
-                        if shift_on ^ caps_on:
-                            actual = ch.upper()
-                    elif ch == '-':
-                        if shift_on:
-                            actual = '_'
-                    name_input += actual
-                    key_last_time[ch] = current_time
-                    key_next_repeat[ch] = current_time + key_repeat_interval
-                    break
-
-    # Update prev_pressed_keys for next frame
-    prev_pressed_keys = set(pressed_chars)
+# Text input is handled by TextInputHandler in input_handler.py
 
 def update():
-    global name_input_time, show_name_cursor, entering_name, name_input, prev_pressed_keys
-    
-    # Handle name input
-    if entering_name:
-        # Handle text input
-        handle_text_input()
-        
-        # Blink cursor
-        current_time = pygame.time.get_ticks()
-        if current_time - name_input_time > 500:  # Blink every 500ms
-            show_name_cursor = not show_name_cursor
-            name_input_time = current_time
+    global current_player_name
+
+    # If name editing is active, let TextInputHandler process input
+    if text_input.entering:
+        status, name = text_input.update(keyboard)
+        if status == 'commit':
+            if name:
+                current_player_name = name
+                if SAVE_PLAYER:
+                    save_player_name(current_player_name)
+        # cancel or idle simply return to game
         return
-    
+
     # Toggle name input with N key
     if keyboard.n and not (landed or crashed):
-        entering_name = True
-        name_input = current_player_name
-        # Consume the initial 'n' press so it doesn't appear in the input.
-        # Also initialize per-key timing so it isn't treated as a held key that repeats immediately.
-        now = pygame.time.get_ticks()
-        try:
-            prev_pressed_keys.add('n')
-        except Exception:
-            prev_pressed_keys = set(['n'])
-        key_last_time['n'] = now
-        key_next_repeat['n'] = now + key_repeat_delay
+        # start input and consume the initial 'n' press so it doesn't appear
+        text_input.start(current_player_name, consume_keys={'n'})
         return
-        
+
     if keyboard.r:
         reset()
         return
