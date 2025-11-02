@@ -32,3 +32,17 @@ Controls
 Notes
 
 - This is a small, educational demo. Feel free to request additions (sound, images, better landing detection, particles, scoring, levels).
+
+## Build & Release
+
+Local build (Windows PowerShell):
+
+```powershell
+# activate virtualenv (example)
+& .\.venv\Scripts\Activate.ps1
+# install runtime & build deps
+python -m pip install -r requirements.txt
+# run the build helper (uses PyInstaller via build.py)
+python .\build.py
+# built artifacts are written to the `dist\` folder
+```
