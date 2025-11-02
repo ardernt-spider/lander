@@ -11,12 +11,31 @@ This is intentionally lightweight: no external assets, draws the lander as a pol
 import math
 import random
 import pygame
+import json
+import os
 from pygame.constants import *
 import pygame.font
 from pgzero.keyboard import keyboard
 
 # Make keyboard available globally
 globals()['keyboard'] = keyboard
+
+def load_high_score():
+    try:
+        if os.path.exists('scores.json'):
+            with open('scores.json', 'r') as f:
+                data = json.load(f)
+                return data.get('high_score', 0)
+    except Exception as e:
+        print(f"Error loading high score: {e}")
+    return 0
+
+def save_high_score():
+    try:
+        with open('scores.json', 'w') as f:
+            json.dump({'high_score': high_score}, f)
+    except Exception as e:
+        print(f"Error saving high score: {e}")
 
 # Initialize Pygame
 pygame.init()
@@ -44,7 +63,7 @@ alive = True
 landed = False
 crashed = False
 score = 0
-high_score = 0
+high_score = load_high_score()  # Load the high score from file
 mission_start_time = 0
 last_landing_stats = None  # To store stats of the last landing
 
@@ -171,6 +190,7 @@ def calculate_landing_score(vx, vy, landing_x, mission_time):
     # Update high score
     if total_score > high_score:
         high_score = total_score
+        save_high_score()  # Save immediately when high score is beaten
     
     return total_score
 
