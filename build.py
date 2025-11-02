@@ -6,7 +6,6 @@ import PyInstaller.__main__
 import os
 import shutil
 import pgzero
-import sys
 
 # Get pgzero package location
 PGZERO_PATH = os.path.dirname(pgzero.__file__)
@@ -21,9 +20,8 @@ def build_game(debug=False):
             if os.path.exists(dir_name):
                 shutil.rmtree(dir_name)
     
-    # Set name and console flag based on debug mode
+    # Set name based on debug mode
     name = 'LunarLander-debug' if debug else 'LunarLander'
-    console_flag = [] if debug else ['--windowed']
     
     # Get pgzero package location
     pgzero_path = os.path.dirname(pgzero.__file__)

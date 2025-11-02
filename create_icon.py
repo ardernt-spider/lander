@@ -36,8 +36,6 @@ def draw_lander(image, draw, center_x, center_y, with_background=False):
     draw.polygon(capsule_points, fill=(255, 255, 255), outline=(0, 0, 0))
     
     # Landing legs with pads
-    leg_length = 30
-    
     # Left leg
     draw.line([(center_x - 25, center_y + 15), 
                (center_x - 40, center_y + 45)], 

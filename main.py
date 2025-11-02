@@ -11,31 +11,29 @@ This is intentionally lightweight: no external assets, draws the lander as a pol
 import math
 import random
 import pygame
-import json
 import os
-import sys
 import pygame.font
 from pgzero.keyboard import keyboard
-
-# Make keyboard available globally
-globals()['keyboard'] = keyboard
-
 from datetime import datetime
+from input_handler import TextInputHandler
 
 # Import a small constants module (low-risk refactor)
 from constants import (
-    MAX_TOP_SCORES, DEFAULT_PLAYER_NAME, TARGET_RATIO,
+    TARGET_RATIO,
     key_repeat_delay, key_repeat_interval, TARGET_FPS, TITLE
 )
 
 # Asset helpers
-from assets import load_image, resource_path
+from assets import load_image
 
 # Persistence helpers
 from persistence import (
     load_player_name, save_player_name, load_scores,
-    save_new_score, SAVE_PLAYER, SAVE_SCORES
+    save_new_score, SAVE_PLAYER
 )
+
+# Make keyboard available globally
+globals()['keyboard'] = keyboard
 
 # Initialize Pygame
 pygame.init()
@@ -56,17 +54,17 @@ def get_screen_resolution():
                 resolution = output.split()[0]
                 width, height = map(int, resolution.split('x'))
                 return width, height
-            except:
+            except Exception:
                 # Fallback for macOS or if xrandr fails
                 # Create a temporary window to get the real screen size
-                temp_surface = pygame.display.set_mode((1, 1))
+                pygame.display.set_mode((1, 1))
                 info = pygame.display.Info()
                 pygame.display.quit()
                 pygame.display.init()
                 return info.current_w, info.current_h
         else:
             # Fallback method
-            temp_surface = pygame.display.set_mode((1, 1))
+            pygame.display.set_mode((1, 1))
             info = pygame.display.Info()
             pygame.display.quit()
             pygame.display.init()
@@ -123,7 +121,6 @@ last_landing_stats = None  # To store stats of the last landing
 # Player name state
 current_player_name = load_player_name()
 # Text input handler (name editing)
-from input_handler import TextInputHandler
 text_input = TextInputHandler(repeat_delay=key_repeat_delay, repeat_interval=key_repeat_interval)
 
 # Landing pad (scaled with screen size)
@@ -591,7 +588,8 @@ def draw():
                 
                 # Score entries
                 for i, score_data in enumerate(top_scores[:5]):
-                    if i >= 5: break  # Show only top 5
+                    if i >= 5:
+                        break  # Show only top 5
                     
                     date_obj = datetime.strptime(score_data['date'], "%Y-%m-%d %H:%M:%S")
                     date_str = date_obj.strftime("%Y-%m-%d")

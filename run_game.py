@@ -4,7 +4,7 @@ Directly imports all game functions and variables from main.py,
 then starts the game loop.
 """
 import pygame
-from pygame.locals import *
+from pygame.locals import QUIT, KEYDOWN, KEYUP, K_ESCAPE
 from pgzero.keyboard import keyboard
 
 # Make keyboard available globally
@@ -12,15 +12,7 @@ globals()['keyboard'] = keyboard
 
 from main import (
     # Constants
-    WIDTH, HEIGHT, GRAVITY, MAIN_THRUST, ROTATION_SPEED,
-    SIDE_THRUST, TARGET_FPS as FPS, TITLE,
-    # Game state
-    lander_pos, lander_vel, lander_angle, fuel, alive,
-    landed, crashed, pad_width, pad_height, pad_x, pad_y,
-    lander_size,
-    # Functions
-    reset, apply_physics, check_collision, draw_lander,
-    draw, update
+    WIDTH, HEIGHT, TARGET_FPS as FPS, lander_pos, draw, update
 )
 
 
