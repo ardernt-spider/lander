@@ -7,15 +7,31 @@ Requirements
 - Python 3.8+
 - Pygame Zero (install with pip)
 
-Install
+## Development Setup
 
-```powershell
-python -m pip install -r requirements.txt
+1. Create and activate a virtual environment (recommended):
+```bash
+# Windows
+python -m venv .venv
+.\.venv\Scripts\activate
+
+# Linux/macOS
+python -m venv .venv
+source .venv/bin/activate
 ```
 
-Run
+2. Install dependencies:
+```bash
+# Install runtime dependencies
+python -m pip install -r requirements.txt
 
-```powershell
+# Install development dependencies (tests, build tools)
+python -m pip install -r requirements-dev.txt
+```
+
+## Running the Game
+
+```bash
 # preferred: uses the pgzrun script
 pgzrun main.py
 
@@ -37,12 +53,7 @@ Notes
 
 The game includes a comprehensive test suite using pytest. To run the tests:
 
-1. Install test dependencies:
-```bash
-python -m pip install pytest pytest-cov
-```
-
-2. Run tests with coverage:
+Run tests with coverage:
 ```bash
 # Run all tests with coverage report
 python -m pytest tests/ --cov=. --cov-report=term-missing
@@ -78,22 +89,17 @@ Test coverage is focused on core game modules. The main game loop and rendering 
 During development, you can run tests continuously using pytest-watch:
 
 ```bash
-# Install pytest-watch
-python -m pip install pytest-watch
-
 # Run tests whenever files change
 ptw
 ```
 
 ## Build & Release
 
-Local build (Windows PowerShell):
+Build a standalone executable:
 
-```powershell
-# activate virtualenv (example)
-& .\.venv\Scripts\Activate.ps1
-# install runtime & build deps
-python -m pip install -r requirements.txt
+```bash
+# Make sure you have development dependencies installed
+python -m pip install -r requirements-dev.txt
 # run the build helper (uses PyInstaller via build.py)
 python .\build.py
 # built artifacts are written to the `dist\` folder
