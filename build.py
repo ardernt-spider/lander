@@ -1,80 +1,51 @@
 """
 Build script for creating a Windows executable of the Lunar Lander game.
 Run with: python build.py
+
+This script uses PyInstaller to create either a debug version (with console)
+or a release version (without console) of the game. Both versions will be
+created by default when running the script.
 """
 import PyInstaller.__main__
 import os
 import shutil
 import pgzero
 
-# Get pgzero package location
+# Get paths for required resources
 PGZERO_PATH = os.path.dirname(pgzero.__file__)
-# Absolute path to custom icon so PyInstaller picks it up reliably
 ICON_PATH = os.path.abspath(os.path.join(os.path.dirname(__file__), 'assets', 'icon.ico'))
 ASSETS_PATH = os.path.abspath(os.path.join(os.path.dirname(__file__), 'assets'))
 
 def build_game(debug=False):
-    # Clean previous builds if not building debug version
-    if not debug:
-        for dir_name in ['build', 'dist']:
-            if os.path.exists(dir_name):
-                shutil.rmtree(dir_name)
+    """Build a version of the game executable.
     
-    # Set name based on debug mode
+    Args:
+        debug: If True, builds with console window and debug name
+    """
+    # Set name and console mode based on debug flag
     name = 'LunarLander-debug' if debug else 'LunarLander'
-    
-    # Get pgzero package location
-    pgzero_path = os.path.dirname(pgzero.__file__)
+    windowed = not debug  # Show console in debug mode
     
     # PyInstaller configuration
     cmd = [
-        'run_game.py',               # Our wrapper script
-        f'--name={name}',            # Name of the executable
-        '--onefile',                 # Create a single executable
-        f'--add-data={pgzero_path};pgzero',  # Include pgzero package data
-        f'--add-data={ASSETS_PATH};assets',  # Include assets folder
-        '--hidden-import=pgzero.builtins',   # Required for pgzero
-        '--hidden-import=pygame',            # Ensure pygame is included
-        '--hidden-import=pygame.base',       # Additional pygame components
+        'main.py',                          # Main game script
+        f'--name={name}',                   # Executable name
+        '--onefile',                        # Create single executable
+        f'--add-data={PGZERO_PATH};pgzero', # Include pgzero data
+        f'--add-data={ASSETS_PATH};assets',  # Include game assets
+        '--hidden-import=pgzero.builtins',   # Required imports
+        '--hidden-import=pygame',
+        '--hidden-import=pygame.base',
         '--collect-all=pgzero',             # Get all pgzero resources
-        f'--icon={ICON_PATH}'                # Custom icon (absolute path)
+        f'--icon={ICON_PATH}'               # Custom icon
     ]
     
-    # Add windowed flag for non-debug builds
-    if not debug:
+    # Add windowed flag for release builds
+    if windowed:
         cmd.append('--windowed')
+
     
-    PyInstaller.__main__.run(cmd)
-
-def build_debug():
-    """Build the debug version with console window"""
-    cmd = [
-        'run_game.py',                      # Our wrapper script
-        '--name=LunarLander-debug',         # Name of the executable
-        '--onefile',                        # Create a single executable
-        f'--add-data={PGZERO_PATH};pgzero',  # Include pgzero package data
-        f'--add-data={ASSETS_PATH};assets',  # Include assets folder
-        '--hidden-import=pgzero.builtins',  # Required for pgzero
-        '--hidden-import=pygame',           # Ensure pygame is included
-        '--hidden-import=pygame.base',      # Additional pygame components
-        '--collect-all=pgzero'             # Get all pgzero resources
-    ]
-    PyInstaller.__main__.run(cmd)
-
-def build_release():
-    """Build the release version without console window"""
-    cmd = [
-        'run_game.py',                      # Our wrapper script
-        '--name=LunarLander',              # Name of the executable
-        '--onefile',                        # Create a single executable
-        '--windowed',                       # Hide console window
-        f'--add-data={PGZERO_PATH};pgzero',  # Include pgzero package data
-        f'--add-data={ASSETS_PATH};assets',  # Include assets folder
-        '--hidden-import=pgzero.builtins',  # Required for pgzero
-        '--hidden-import=pygame',           # Ensure pygame is included
-        '--hidden-import=pygame.base',      # Additional pygame components
-        '--collect-all=pgzero'             # Get all pgzero resources
-    ]
+    # Run PyInstaller with our configuration
     PyInstaller.__main__.run(cmd)
 
 if __name__ == '__main__':
@@ -84,7 +55,7 @@ if __name__ == '__main__':
             shutil.rmtree(dir_name)
     
     print("Building debug version...")
-    build_debug()
+    build_game(debug=True)
     print("\nBuilding release version...")
-    build_release()
-    print("\nBuild complete! Executables are in the 'dist' folder:")
+    build_game(debug=False)
+    print("\nBuild complete! Executables are in the 'dist' folder.")
