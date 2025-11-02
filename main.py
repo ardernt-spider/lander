@@ -39,8 +39,17 @@ globals()['keyboard'] = keyboard
 pygame.init()
 pygame.font.init()
 
-def get_screen_resolution():
-    """Get the primary screen resolution in a cross-platform way."""
+def get_screen_resolution() -> tuple[int, int]:
+    """Get the primary screen resolution in a cross-platform way.
+    
+    Returns:
+        tuple[int, int]: A tuple containing (width, height) of the primary screen in pixels
+        
+    This function attempts different methods based on the OS:
+    - Windows: Uses GetSystemMetrics via ctypes
+    - Linux: Tries xrandr command first
+    - macOS/fallback: Uses pygame display info
+    """
     try:
         if os.name == 'nt':  # Windows
             import ctypes
@@ -141,7 +150,13 @@ FPS_SAMPLE_SIZE = 30  # Number of frames to average for FPS calculation
 
 # HUD font sizes and title provided by constants
 
-def get_frame_time():
+def get_frame_time() -> float:
+    """Get the time since last frame, capped to prevent physics glitches.
+    
+    Returns:
+        float: Time delta in seconds, capped at MAX_DT to prevent physics issues during lag.
+        The first call returns 1/TARGET_FPS.
+    """
     global last_frame_time, frame_times
     current_time = pygame.time.get_ticks() / 1000.0  # Convert to seconds
     
@@ -161,14 +176,26 @@ def get_frame_time():
     last_frame_time = current_time
     return dt
 
-def get_current_fps():
+def get_current_fps() -> float:
+    """Calculate current FPS based on recent frame times.
+    
+    Returns:
+        float: Current FPS averaged over recent frames. Returns TARGET_FPS
+        if no frames have been processed yet or if time delta is zero.
+    """
     if not frame_times:
         return TARGET_FPS
     avg_frame_time = sum(frame_times) / len(frame_times)
     return 1.0 / avg_frame_time if avg_frame_time > 0 else TARGET_FPS
 
 
-def reset():
+def reset() -> None:
+    """Reset the game state for a new attempt.
+    
+    Resets lander position, velocity, angle, fuel, landing pad location,
+    and all game state flags (alive, landed, crashed). Also resets the
+    mission timer and clears previous landing statistics.
+    """
     global lander_pos, lander_vel, lander_angle, fuel, alive, landed, crashed, pad_x, score, mission_start_time, last_landing_stats
     lander_pos = [WIDTH * 0.5, HEIGHT * 0.167]  # Start at 1/6 of screen height
     lander_vel = [0.0, 0.0]
@@ -183,7 +210,20 @@ def reset():
     pad_x = random.randint(min_pad_margin, WIDTH - min_pad_margin - pad_width)
 
 
-def apply_physics(dt):
+def apply_physics(dt: float) -> None:
+    """Update lander physics based on current controls and time delta.
+    
+    Args:
+        dt: Time delta in seconds since last update.
+        
+    The function applies:
+    - Rotation based on left/right controls
+    - Main thrust vector based on angle when up/space is pressed
+    - Constant gravity
+    - Fuel consumption for thrusting and rotation
+    - Position integration from velocity
+    - Screen boundary checking
+    """
     global lander_pos, lander_vel, lander_angle, fuel
 
     # Controls
@@ -239,8 +279,29 @@ def apply_physics(dt):
         lander_vel[0] = 0
 
 
-def calculate_landing_score(vx, vy, landing_x, mission_time):
-    global last_landing_stats
+def calculate_landing_score(vx: float, vy: float, landing_x: float, mission_time: int) -> int:
+    """Calculate score for a successful landing based on various factors.
+    
+    Args:
+        vx: Horizontal velocity at landing (pixels/second)
+        vy: Vertical velocity at landing (pixels/second)
+        landing_x: X coordinate where lander touched down
+        mission_time: Total mission time in milliseconds
+        
+    Returns:
+        int: Total score calculated from:
+            - Base score (1000)
+            - Speed bonus (up to 500)
+            - Position bonus for landing near pad center (up to 300)
+            - Fuel bonus (2 points per fuel unit)
+            - Time bonus for quick landings (up to 1000)
+            
+    Side effects:
+        Updates last_landing_stats global with detailed scoring breakdown
+        Updates global score variable
+        Saves score to persistent storage via save_new_score()
+    """
+    global last_landing_stats, score
     
     # Base score for successful landing
     score = 1000
@@ -281,7 +342,19 @@ def calculate_landing_score(vx, vy, landing_x, mission_time):
     
     return total_score
 
-def check_collision():
+def check_collision() -> None:
+    """Check for collision with surface and determine landing outcome.
+    
+    A successful landing requires:
+    - Touching down on the landing pad
+    - Vertical and horizontal velocity below maximum safe velocity
+    - Lander angle within 15 degrees of vertical
+    
+    Side effects:
+        Updates alive, landed, crashed state flags
+        On successful landing: calculates and saves score
+        On crash: zeros velocity and sets score to 0
+    """
     global alive, landed, crashed, score
     # Simple collision with surface
     surface_y = HEIGHT - int(40 * SCALE_FACTOR)
@@ -314,7 +387,21 @@ def check_collision():
             score = 0  # No score for crashing
 
 
-def draw_lander(surface):
+def draw_lander(surface: pygame.Surface) -> None:
+    """Draw the lander sprite and optional thrust flame on the given surface.
+    
+    Args:
+        surface: Pygame surface to draw on
+        
+    The lander sprite is loaded from assets/lander.png. When thrusting,
+    a simple triangle flame effect is drawn behind the lander, rotated
+    to match the lander's orientation. The flame size is randomly varied
+    to create a flickering effect.
+    
+    Side effects:
+        May create/update lander_sprite and flame_sprite globals on first call
+        Logs an error if lander sprite cannot be loaded
+    """
     global lander_sprite, flame_sprite
 
     # Prepare asset path (always defined for error reporting)
@@ -371,7 +458,19 @@ def draw_lander(surface):
         pygame.draw.polygon(surface, (255, 120, 20), flame_points, 0)
 
 
-def draw():
+def draw() -> None:
+    """Draw the complete game scene.
+    
+    Renders in order:
+    1. Background with parallax star field
+    2. Moon surface and landing pad
+    3. Lander with thrust effects
+    4. HUD with flight data, score, and player info
+    5. Text overlays for name input and landing results
+    
+    The star field is created once and cached in a global;
+    stars move with parallax based on lander velocity.
+    """
     DISPLAY.fill((10, 10, 30))
 
     # Initialize star field if not exists
@@ -448,21 +547,38 @@ def draw():
     # Lander
     draw_lander(DISPLAY)
 
-    def draw_text_with_shadow(text, color, position, align="left"):
+    def draw_text_with_shadow(text: str, color: tuple[int, int, int], position: tuple[float | int, float | int], align: str = "left") -> int:
+        """Draw text with a drop shadow for better legibility.
+        
+        Args:
+            text: The text string to render
+            color: RGB color tuple for the text
+            position: (x, y) coordinates for text position (can be float or int)
+            align: Text alignment - "left", "center", or "right" (default: "left")
+            
+        Returns:
+            int: Y coordinate below the drawn text (useful for vertically stacking text)
+            
+        The text is drawn twice - once in black offset by 1 pixel for the shadow,
+        then again in the specified color. The shadow helps text readability.
+        """
         shadow_offset = 1
         text_surface = FONT.render(text, True, (0, 0, 0))
         text_lit = FONT.render(text, True, color)
         text_rect = text_surface.get_rect()
         
+        # Convert position coordinates to integers
+        x, y = int(position[0]), int(position[1])
+        
         if align == "right":
-            text_rect.right = position[0]
-            text_rect.top = position[1]
+            text_rect.right = x
+            text_rect.top = y
         elif align == "center":
-            text_rect.centerx = position[0]
-            text_rect.top = position[1]
+            text_rect.centerx = x
+            text_rect.top = y
         else:  # left
-            text_rect.left = position[0]
-            text_rect.top = position[1]
+            text_rect.left = x
+            text_rect.top = y
             
         # Draw shadow first
         shadow_rect = text_rect.copy()
@@ -618,7 +734,18 @@ def draw():
 
 # Text input is handled by TextInputHandler in input_handler.py
 
-def update():
+def update() -> None:
+    """Update game state for the current frame.
+    
+    Handles:
+    1. Name input mode (if active)
+    2. Game reset via 'R' key
+    3. Name edit mode toggle via 'N' key
+    4. Physics simulation when game is active
+    
+    The function delegates text input handling to TextInputHandler
+    and physics simulation to apply_physics().
+    """
     global current_player_name
 
     # If name editing is active, let TextInputHandler process input
