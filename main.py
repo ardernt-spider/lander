@@ -32,138 +32,11 @@ from constants import (
 # Asset helpers
 from assets import load_image, resource_path
 
-# --- Persistent storage configuration ---
-def get_data_dir():
-    """Return a per-user data directory for the game and ensure it exists."""
-    try:
-        if os.name == 'nt':
-            appdata = os.getenv('APPDATA') or os.path.expanduser('~')
-            path = os.path.join(appdata, 'LunarLander')
-        elif sys.platform == 'darwin':
-            path = os.path.expanduser('~/Library/Application Support/LunarLander')
-        else:
-            path = os.path.expanduser('~/.local/share/lander')
-        os.makedirs(path, exist_ok=True)
-        return path
-    except Exception:
-        # Fallback to current directory
-        return os.getcwd()
-
-# Files inside the data directory
-DATA_DIR = get_data_dir()
-PLAYER_FILE = os.path.join(DATA_DIR, 'player.json')
-SCORES_FILE = os.path.join(DATA_DIR, 'scores.json')
-SETTINGS_FILE = os.path.join(DATA_DIR, 'settings.json')
-
-# Default runtime settings (can be persisted in settings.json)
-DEFAULT_SETTINGS = {
-    'save_player': True,
-    'save_scores': True,
-}
-
-def atomic_write_json(path, data):
-    """Write JSON to a temp file and replace atomically."""
-    try:
-        tmp = path + '.tmp'
-        with open(tmp, 'w', encoding='utf-8') as f:
-            json.dump(data, f, indent=2)
-            f.flush()
-            os.fsync(f.fileno())
-        os.replace(tmp, path)
-    except Exception:
-        # Fallback to non-atomic write
-        with open(path, 'w', encoding='utf-8') as f:
-            json.dump(data, f, indent=2)
-
-def load_settings():
-    try:
-        if os.path.exists(SETTINGS_FILE):
-            with open(SETTINGS_FILE, 'r', encoding='utf-8') as f:
-                data = json.load(f)
-                if not isinstance(data, dict):
-                    return DEFAULT_SETTINGS.copy()
-                s = DEFAULT_SETTINGS.copy()
-                s.update(data)
-                return s
-    except Exception as e:
-        print(f"Error loading settings: {e}")
-    return DEFAULT_SETTINGS.copy()
-
-def save_settings(settings):
-    try:
-        atomic_write_json(SETTINGS_FILE, settings)
-    except Exception as e:
-        print(f"Error saving settings: {e}")
-
-# Load runtime settings
-_runtime_settings = load_settings()
-SAVE_PLAYER = bool(_runtime_settings.get('save_player', True))
-SAVE_SCORES = bool(_runtime_settings.get('save_scores', True))
-
-def load_player_name():
-    try:
-        if os.path.exists(PLAYER_FILE):
-            with open(PLAYER_FILE, 'r', encoding='utf-8') as f:
-                data = json.load(f)
-                if isinstance(data, dict):
-                    return data.get('name', DEFAULT_PLAYER_NAME)
-    except Exception as e:
-        print(f"Error loading player name: {e}")
-    return DEFAULT_PLAYER_NAME
-
-def save_player_name(name):
-    if not SAVE_PLAYER:
-        return
-    try:
-        atomic_write_json(PLAYER_FILE, {'name': name})
-    except Exception as e:
-        print(f"Error saving player name: {e}")
-
-def load_scores():
-    try:
-        if os.path.exists(SCORES_FILE):
-            with open(SCORES_FILE, 'r', encoding='utf-8') as f:
-                data = json.load(f)
-                # Ensure backward compatibility
-                if isinstance(data, dict) and 'high_score' in data:
-                    # Convert old format to new format
-                    return [{'score': data['high_score'],
-                             'player': DEFAULT_PLAYER_NAME,
-                             'date': datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
-                             'stats': None}]
-                # Validate structure
-                if isinstance(data, list):
-                    valid = []
-                    for item in data:
-                        if isinstance(item, dict) and 'score' in item and 'player' in item and 'date' in item:
-                            valid.append(item)
-                    return valid
-    except Exception as e:
-        print(f"Error loading scores: {e}")
-    return []
-
-def save_new_score(score, stats):
-    try:
-        scores = load_scores()
-        # Add new score with timestamp
-        new_score = {
-            'score': score,
-            'player': current_player_name,
-            'date': datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
-            'stats': stats
-        }
-        scores.append(new_score)
-        # Sort by score in descending order
-        scores.sort(key=lambda x: x['score'], reverse=True)
-        # Keep only top scores
-        scores = scores[:MAX_TOP_SCORES]
-        
-        if SAVE_SCORES:
-            atomic_write_json(SCORES_FILE, scores)
-        return scores
-    except Exception as e:
-        print(f"Error saving score: {e}")
-        return []
+# Persistence helpers
+from persistence import (
+    load_player_name, save_player_name, load_scores,
+    save_new_score, SAVE_PLAYER, SAVE_SCORES
+)
 
 # Initialize Pygame
 pygame.init()
@@ -421,7 +294,7 @@ def calculate_landing_score(vx, vy, landing_x, mission_time):
     
     # Save score and update top scores
     global top_scores
-    top_scores = save_new_score(total_score, last_landing_stats)
+    top_scores = save_new_score(total_score, last_landing_stats, current_player_name)
     
     return total_score
 
