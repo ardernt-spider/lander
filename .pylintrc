@@ -1,0 +1,50 @@
+[MASTER]
+# Discover python modules in the project
+recursive=yes
+
+# Add any Python module names where their docs should not be checked
+ignore=CVS,.git,__pycache__,.venv,venv,ENV,env,dist,build,*.egg-info
+
+# Files or directories matching these patterns are skipped
+ignore-patterns=
+    .git/.*,
+    __pycache__/.*,
+    .venv/.*,
+    venv/.*,
+    ENV/.*,
+    env/.*,
+    dist/.*,
+    build/.*,
+    .*\.egg-info/.*
+
+# Use multiple processes to speed up Pylint (0 means auto)
+jobs=0
+
+[MESSAGES CONTROL]
+# Only show warnings with the listed confidence levels
+confidence=HIGH,CONTROL_FLOW,INFERENCE,INFERENCE_FAILURE,UNDEFINED
+
+# Disable specific warnings
+disable=
+    C0111,  # missing-docstring
+    C0103,  # invalid-name (for pygame style variables)
+    W0511,  # fixme (allows TODO comments)
+
+[FORMAT]
+# Maximum number of characters on a single line
+max-line-length=100
+
+# Maximum number of lines in a module
+max-module-lines=1000
+
+[BASIC]
+# Regular expression which should only match function or class names
+function-rgx=[a-z_][a-z0-9_]{2,50}$
+class-rgx=[A-Z_][a-zA-Z0-9_]+$
+
+# Regular expression which should only match correct variable names
+variable-rgx=[a-z_][a-z0-9_]{0,30}$
+
+[MISCELLANEOUS]
+# List of note tags to take into consideration
+notes=FIXME,TODO
