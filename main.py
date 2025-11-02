@@ -14,7 +14,6 @@ import pygame
 import json
 import os
 import sys
-from pygame.constants import *
 import pygame.font
 from pgzero.keyboard import keyboard
 
@@ -82,7 +81,6 @@ monitor_width, monitor_height = get_screen_resolution()
 print(f"Detected screen resolution: {monitor_width}x{monitor_height}")
 
 # Calculate 80% of screen size while maintaining aspect ratio
-TARGET_RATIO = 4/3  # Standard game aspect ratio
 scale = 0.8  # 80% of screen size
 
 # Calculate width and height based on screen size while maintaining aspect ratio
@@ -138,15 +136,13 @@ pad_y = HEIGHT - int(40 * SCALE_FACTOR)
 # Visual sizes
 lander_size = int(18 * SCALE_FACTOR)
 
-# Frame timing
-TARGET_FPS = 60
+# Frame timing (TARGET_FPS provided by constants)
 MAX_DT = 1.0 / 30  # Cap the maximum time delta to prevent physics glitches
 last_frame_time = 0
 frame_times = []  # Keep track of recent frame times for FPS display
 FPS_SAMPLE_SIZE = 30  # Number of frames to average for FPS calculation
 
-# HUD font sizes
-TITLE = "Lunar Lander"
+# HUD font sizes and title provided by constants
 
 def get_frame_time():
     global last_frame_time, frame_times
