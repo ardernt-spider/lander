@@ -467,25 +467,25 @@ def check_collision():
 
 def draw_lander(surface):
     global lander_sprite, flame_sprite
-    
-    # Load sprites if not already loaded
-    if 'lander_sprite' not in globals():
-        try:
-            lander_path = resource_path(os.path.join('assets', 'lander.png'))
-            lander_sprite = pygame.image.load(lander_path).convert_alpha()
-            # Create a simple flame sprite
-            flame_size = (32, 48)
-            flame_sprite = pygame.Surface(flame_size, pygame.SRCALPHA)
-            flame_points = [(16, 0), (32, 48), (0, 48)]
-            pygame.draw.polygon(flame_sprite, (255, 120, 20), flame_points, 0)
-        except Exception as e:
-            print(f"Error loading lander sprite from {lander_path}: {e}")
-            return
-    
+
+    # Prepare asset path (always defined for error reporting)
+    lander_path = os.path.join('assets', 'lander.png')
+    try:
+        full_lander_path = resource_path(lander_path)
+        lander_sprite = pygame.image.load(full_lander_path).convert_alpha()
+        # Create a simple flame sprite
+        flame_size = (32, 48)
+        flame_sprite = pygame.Surface(flame_size, pygame.SRCALPHA)
+        flame_points = [(16, 0), (32, 48), (0, 48)]
+        pygame.draw.polygon(flame_sprite, (255, 120, 20), flame_points, 0)
+    except Exception as e:
+        print(f"Error loading lander sprite from {lander_path}: {e}")
+        return
+
     # Get the rect for positioning
     cx, cy = lander_pos
     sprite_rect = lander_sprite.get_rect()
-    sprite_rect.center = (cx, cy)
+    sprite_rect.center = (int(cx), int(cy))
     
     # Rotate the sprite
     rotated_lander = pygame.transform.rotate(lander_sprite, -lander_angle)  # Negative angle for clockwise rotation
