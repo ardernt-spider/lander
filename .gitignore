@@ -95,3 +95,6 @@ dmypy.json
 
 # Cython debug symbols
 cython_debug/
+
+# Game specific files
+scores.json
