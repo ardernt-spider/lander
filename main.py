@@ -1,10 +1,13 @@
 """
-Simple Lunar Lander implemented for Pygame Zero.
-Run with: pgzrun main.py
+Simple Lunar Lander game implemented in Pygame.
+Run with: python main.py
 
 Controls:
 - Left/Right arrows: rotate
 - Up arrow / Space: main thrust
+- N: Edit player name
+- R: Reset game
+- Esc: Quit
 
 This is intentionally lightweight: no external assets, draws the lander as a polygon.
 """
@@ -13,6 +16,7 @@ import random
 import pygame
 import os
 import pygame.font
+from pygame.locals import QUIT, KEYDOWN, KEYUP, K_ESCAPE
 from pgzero.keyboard import keyboard
 from datetime import datetime
 from input_handler import TextInputHandler
@@ -779,3 +783,53 @@ def update() -> None:
 
 # Initialize random pad location at start
 reset()
+
+def main() -> None:
+    """Main entry point for the game. Runs the game loop.
+    
+    Sets up the game clock and runs the main game loop handling:
+    - Event processing (quit, keyboard)
+    - Game state updates
+    - Drawing
+    - Frame rate control
+    """
+    global clock, DISPLAY
+    
+    # Create clock for controlling frame rate
+    clock = pygame.time.Clock()
+    
+    # Debug info
+    print(f"Debug: Window size = {WIDTH}x{HEIGHT}")
+    print(f"Debug: Lander position = {lander_pos}")
+    print("Debug: Game starting...")
+
+    # Main game loop
+    running = True
+    while running:
+        # Handle events
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                running = False
+            elif event.type == pygame.KEYDOWN:
+                if event.key == pygame.K_ESCAPE:
+                    running = False
+                # Update keyboard state for Pygame Zero compatibility
+                keyboard._press(event.key)
+            elif event.type == pygame.KEYUP:
+                # Update keyboard state for Pygame Zero compatibility
+                keyboard._release(event.key)
+
+        # Run game logic
+        update()
+        
+        # Draw everything
+        draw()
+        
+        # Control frame rate
+        clock.tick(TARGET_FPS)
+
+    # Clean up
+    pygame.quit()
+
+if __name__ == '__main__':
+    main()
