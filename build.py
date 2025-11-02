@@ -12,6 +12,7 @@ import sys
 PGZERO_PATH = os.path.dirname(pgzero.__file__)
 # Absolute path to custom icon so PyInstaller picks it up reliably
 ICON_PATH = os.path.abspath(os.path.join(os.path.dirname(__file__), 'assets', 'icon.ico'))
+ASSETS_PATH = os.path.abspath(os.path.join(os.path.dirname(__file__), 'assets'))
 
 def build_game(debug=False):
     # Clean previous builds if not building debug version
@@ -33,6 +34,7 @@ def build_game(debug=False):
         f'--name={name}',            # Name of the executable
         '--onefile',                 # Create a single executable
         f'--add-data={pgzero_path};pgzero',  # Include pgzero package data
+        f'--add-data={ASSETS_PATH};assets',  # Include assets folder
         '--hidden-import=pgzero.builtins',   # Required for pgzero
         '--hidden-import=pygame',            # Ensure pygame is included
         '--hidden-import=pygame.base',       # Additional pygame components
@@ -53,6 +55,7 @@ def build_debug():
         '--name=LunarLander-debug',         # Name of the executable
         '--onefile',                        # Create a single executable
         f'--add-data={PGZERO_PATH};pgzero',  # Include pgzero package data
+        f'--add-data={ASSETS_PATH};assets',  # Include assets folder
         '--hidden-import=pgzero.builtins',  # Required for pgzero
         '--hidden-import=pygame',           # Ensure pygame is included
         '--hidden-import=pygame.base',      # Additional pygame components
@@ -68,6 +71,7 @@ def build_release():
         '--onefile',                        # Create a single executable
         '--windowed',                       # Hide console window
         f'--add-data={PGZERO_PATH};pgzero',  # Include pgzero package data
+        f'--add-data={ASSETS_PATH};assets',  # Include assets folder
         '--hidden-import=pgzero.builtins',  # Required for pgzero
         '--hidden-import=pygame',           # Ensure pygame is included
         '--hidden-import=pygame.base',      # Additional pygame components

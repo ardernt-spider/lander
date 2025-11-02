@@ -13,7 +13,7 @@ globals()['keyboard'] = keyboard
 from main import (
     # Constants
     WIDTH, HEIGHT, GRAVITY, MAIN_THRUST, ROTATION_SPEED,
-    SIDE_THRUST, FPS, DT, TITLE,
+    SIDE_THRUST, TARGET_FPS as FPS, TITLE,
     # Game state
     lander_pos, lander_vel, lander_angle, fuel, alive,
     landed, crashed, pad_width, pad_height, pad_x, pad_y,
@@ -22,6 +22,7 @@ from main import (
     reset, apply_physics, check_collision, draw_lander,
     draw, update
 )
+
 
 print("Debug: Game functions imported")
 print(f"Debug: Window size = {WIDTH}x{HEIGHT}")

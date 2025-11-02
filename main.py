@@ -13,6 +13,7 @@ import random
 import pygame
 import json
 import os
+import sys
 from pygame.constants import *
 import pygame.font
 from pgzero.keyboard import keyboard
@@ -22,39 +23,128 @@ globals()['keyboard'] = keyboard
 
 from datetime import datetime
 
+# Helper to locate bundled resources (works with PyInstaller)
+def resource_path(relative_path: str) -> str:
+    """Return absolute path to resource, works for development and PyInstaller bundles.
+
+    Usage: resource_path('assets/lander.png')
+    """
+    try:
+        # PyInstaller creates a temp folder and stores path in _MEIPASS
+        base_path = sys._MEIPASS  # type: ignore[attr-defined]
+    except Exception:
+        base_path = os.path.dirname(os.path.abspath(__file__))
+    return os.path.join(base_path, relative_path)
+
 MAX_TOP_SCORES = 10
 DEFAULT_PLAYER_NAME = "Player"
 
+# --- Persistent storage configuration ---
+def get_data_dir():
+    """Return a per-user data directory for the game and ensure it exists."""
+    try:
+        if os.name == 'nt':
+            appdata = os.getenv('APPDATA') or os.path.expanduser('~')
+            path = os.path.join(appdata, 'LunarLander')
+        elif sys.platform == 'darwin':
+            path = os.path.expanduser('~/Library/Application Support/LunarLander')
+        else:
+            path = os.path.expanduser('~/.local/share/lander')
+        os.makedirs(path, exist_ok=True)
+        return path
+    except Exception:
+        # Fallback to current directory
+        return os.getcwd()
+
+# Files inside the data directory
+DATA_DIR = get_data_dir()
+PLAYER_FILE = os.path.join(DATA_DIR, 'player.json')
+SCORES_FILE = os.path.join(DATA_DIR, 'scores.json')
+SETTINGS_FILE = os.path.join(DATA_DIR, 'settings.json')
+
+# Default runtime settings (can be persisted in settings.json)
+DEFAULT_SETTINGS = {
+    'save_player': True,
+    'save_scores': True,
+}
+
+def atomic_write_json(path, data):
+    """Write JSON to a temp file and replace atomically."""
+    try:
+        tmp = path + '.tmp'
+        with open(tmp, 'w', encoding='utf-8') as f:
+            json.dump(data, f, indent=2)
+            f.flush()
+            os.fsync(f.fileno())
+        os.replace(tmp, path)
+    except Exception:
+        # Fallback to non-atomic write
+        with open(path, 'w', encoding='utf-8') as f:
+            json.dump(data, f, indent=2)
+
+def load_settings():
+    try:
+        if os.path.exists(SETTINGS_FILE):
+            with open(SETTINGS_FILE, 'r', encoding='utf-8') as f:
+                data = json.load(f)
+                if not isinstance(data, dict):
+                    return DEFAULT_SETTINGS.copy()
+                s = DEFAULT_SETTINGS.copy()
+                s.update(data)
+                return s
+    except Exception as e:
+        print(f"Error loading settings: {e}")
+    return DEFAULT_SETTINGS.copy()
+
+def save_settings(settings):
+    try:
+        atomic_write_json(SETTINGS_FILE, settings)
+    except Exception as e:
+        print(f"Error saving settings: {e}")
+
+# Load runtime settings
+_runtime_settings = load_settings()
+SAVE_PLAYER = bool(_runtime_settings.get('save_player', True))
+SAVE_SCORES = bool(_runtime_settings.get('save_scores', True))
+
 def load_player_name():
     try:
-        if os.path.exists('player.json'):
-            with open('player.json', 'r') as f:
+        if os.path.exists(PLAYER_FILE):
+            with open(PLAYER_FILE, 'r', encoding='utf-8') as f:
                 data = json.load(f)
-                return data.get('name', DEFAULT_PLAYER_NAME)
+                if isinstance(data, dict):
+                    return data.get('name', DEFAULT_PLAYER_NAME)
     except Exception as e:
         print(f"Error loading player name: {e}")
     return DEFAULT_PLAYER_NAME
 
 def save_player_name(name):
+    if not SAVE_PLAYER:
+        return
     try:
-        with open('player.json', 'w') as f:
-            json.dump({'name': name}, f)
+        atomic_write_json(PLAYER_FILE, {'name': name})
     except Exception as e:
         print(f"Error saving player name: {e}")
 
 def load_scores():
     try:
-        if os.path.exists('scores.json'):
-            with open('scores.json', 'r') as f:
+        if os.path.exists(SCORES_FILE):
+            with open(SCORES_FILE, 'r', encoding='utf-8') as f:
                 data = json.load(f)
                 # Ensure backward compatibility
                 if isinstance(data, dict) and 'high_score' in data:
                     # Convert old format to new format
-                    return [{'score': data['high_score'], 
-                           'player': DEFAULT_PLAYER_NAME,
-                           'date': datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
-                           'stats': None}]
-                return data
+                    return [{'score': data['high_score'],
+                             'player': DEFAULT_PLAYER_NAME,
+                             'date': datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+                             'stats': None}]
+                # Validate structure
+                if isinstance(data, list):
+                    valid = []
+                    for item in data:
+                        if isinstance(item, dict) and 'score' in item and 'player' in item and 'date' in item:
+                            valid.append(item)
+                    return valid
     except Exception as e:
         print(f"Error loading scores: {e}")
     return []
@@ -75,9 +165,8 @@ def save_new_score(score, stats):
         # Keep only top scores
         scores = scores[:MAX_TOP_SCORES]
         
-        with open('scores.json', 'w') as f:
-            json.dump(scores, f, indent=2)
-            
+        if SAVE_SCORES:
+            atomic_write_json(SCORES_FILE, scores)
         return scores
     except Exception as e:
         print(f"Error saving score: {e}")
@@ -178,6 +267,10 @@ show_name_cursor = True
 key_input_time = 0
 key_repeat_delay = 500  # ms before key starts repeating
 key_repeat_interval = 50  # ms between repeated characters
+# Per-key repeat tracking to avoid duplicate characters when holding keys
+prev_pressed_keys = set()
+key_last_time = {}        # last time a key produced input (ms)
+key_next_repeat = {}     # next allowed repeat time (ms)
 
 # Landing pad (scaled with screen size)
 pad_width = int(120 * SCALE_FACTOR)
@@ -378,14 +471,15 @@ def draw_lander(surface):
     # Load sprites if not already loaded
     if 'lander_sprite' not in globals():
         try:
-            lander_sprite = pygame.image.load('assets/lander.png').convert_alpha()
+            lander_path = resource_path(os.path.join('assets', 'lander.png'))
+            lander_sprite = pygame.image.load(lander_path).convert_alpha()
             # Create a simple flame sprite
             flame_size = (32, 48)
             flame_sprite = pygame.Surface(flame_size, pygame.SRCALPHA)
             flame_points = [(16, 0), (32, 48), (0, 48)]
             pygame.draw.polygon(flame_sprite, (255, 120, 20), flame_points, 0)
-        except FileNotFoundError:
-            print("Error: Could not find lander.png in assets folder!")
+        except Exception as e:
+            print(f"Error loading lander sprite from {lander_path}: {e}")
             return
     
     # Get the rect for positioning
@@ -674,39 +768,144 @@ def draw():
 
 def handle_text_input():
     global name_input, current_player_name, entering_name, key_input_time
-    
+    global prev_pressed_keys, key_last_time, key_next_repeat
+
     if not entering_name:
         return
-        
+
     current_time = pygame.time.get_ticks()
-    
-    if keyboard.RETURN: # or keyboard.k_KP_ENTER:
+
+    # Safe keyboard attribute checker that also consults pygame key state
+    def key_pressed(k):
+        pressed = False
+        try:
+            pressed = bool(getattr(keyboard, k.lower(), False))
+        except Exception:
+            pressed = False
+
+        # Also check pygame key pressed state for robustness (numeric keypad, etc.)
+        try:
+            kp = pygame.key.get_pressed()
+            # Map simple characters to pygame key constants
+            keycode = None
+            if len(k) == 1 and k.isalpha():
+                keycode = getattr(pygame, f'K_{k}', None)
+                if keycode is None:
+                    keycode = getattr(pygame, f'K_{k.lower()}', None)
+            elif len(k) == 1 and k.isdigit():
+                keycode = getattr(pygame, f'K_{k}', None)
+                if keycode is None:
+                    keycode = getattr(pygame, f'K_KP{k}', None)
+            elif k == ' ':
+                keycode = pygame.K_SPACE
+            elif k == '-':
+                keycode = pygame.K_MINUS
+            elif k == '_':
+                keycode = pygame.K_MINUS
+
+            if keycode is not None and kp[keycode]:
+                pressed = True
+        except Exception:
+            pass
+
+        return pressed
+
+    # Handle confirm/cancel first
+    if key_pressed('return') or keyboard.RETURN:
         if name_input.strip():  # Don't save empty names
             current_player_name = name_input.strip()
             save_player_name(current_player_name)
         entering_name = False
         name_input = ""
-    elif keyboard.ESCAPE:
+        # clear per-key state
+        prev_pressed_keys.clear()
+        return
+    if key_pressed('escape') or keyboard.ESCAPE:
         entering_name = False
         name_input = ""
-    elif keyboard.BACKSPACE:
-        if current_time - key_input_time > key_repeat_delay:
-            name_input = name_input[:-1]
-            key_input_time = current_time - (key_repeat_delay - key_repeat_interval)
-    else:
-        # Handle printable characters
-        for key in 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789 -_':
-            if len(name_input) < 15 and getattr(keyboard, key.lower(), False):
-                if current_time - key_input_time > key_repeat_delay:
-                    name_input += key
-                    key_input_time = current_time - (key_repeat_delay - key_repeat_interval)
+        prev_pressed_keys.clear()
+        return
+
+    # Allowed characters (lowercase). We'll append as typed (respecting Shift/CapsLock).
+    allowed_chars = 'abcdefghijklmnopqrstuvwxyz0123456789 -_'
+
+    # Modifier state for uppercase and shifted characters
+    mods = 0
+    try:
+        mods = pygame.key.get_mods()
+    except Exception:
+        mods = 0
+    shift_on = bool(mods & (pygame.KMOD_LSHIFT | pygame.KMOD_RSHIFT | pygame.KMOD_SHIFT))
+    caps_on = bool(mods & pygame.KMOD_CAPS)
+
+    # Build set of currently pressed allowed characters
+    pressed_chars = set(k for k in allowed_chars if key_pressed(k))
+    backspace_now = key_pressed('backspace') or key_pressed('BACKSPACE') or keyboard.BACKSPACE
+
+    # BACKSPACE handling with per-key timing
+    if backspace_now:
+        if 'BACKSPACE' not in prev_pressed_keys:
+            # new press
+            if name_input:
+                name_input = name_input[:-1]
+            key_last_time['BACKSPACE'] = current_time
+            key_next_repeat['BACKSPACE'] = current_time + key_repeat_delay
+        else:
+            # held
+            if current_time >= key_next_repeat.get('BACKSPACE', 0) and (
+                current_time - key_last_time.get('BACKSPACE', 0) >= key_repeat_interval):
+                if name_input:
+                    name_input = name_input[:-1]
+                key_last_time['BACKSPACE'] = current_time
+                key_next_repeat['BACKSPACE'] = current_time + key_repeat_interval
+
+    # Character input handling
+    new_presses = pressed_chars - prev_pressed_keys
+    held = pressed_chars & prev_pressed_keys
+
+    # Process new presses immediately
+    for ch in new_presses:
+        if len(name_input) < 15:
+            # Determine actual character considering Shift/CapsLock
+            actual = ch
+            if ch.isalpha():
+                # Uppercase if shift xor caps
+                if shift_on ^ caps_on:
+                    actual = ch.upper()
+            elif ch == '-':
+                if shift_on:
+                    actual = '_'
+            # Append and track timing
+            name_input += actual
+            key_last_time[ch] = current_time
+            key_next_repeat[ch] = current_time + key_repeat_delay
+            # accept only one new char per frame to avoid flooding
+            break
+
+    # Process held keys for repeats
+    if not new_presses:
+        for ch in held:
+            next_time = key_next_repeat.get(ch, 0)
+            last_time = key_last_time.get(ch, 0)
+            if current_time >= next_time and (current_time - last_time) >= key_repeat_interval:
+                if len(name_input) < 15:
+                    actual = ch
+                    if ch.isalpha():
+                        if shift_on ^ caps_on:
+                            actual = ch.upper()
+                    elif ch == '-':
+                        if shift_on:
+                            actual = '_'
+                    name_input += actual
+                    key_last_time[ch] = current_time
+                    key_next_repeat[ch] = current_time + key_repeat_interval
                     break
-                    
-    if not any(getattr(keyboard, key.lower(), False) for key in 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789 -_' + 'BACKSPACE'):
-        key_input_time = 0
+
+    # Update prev_pressed_keys for next frame
+    prev_pressed_keys = set(pressed_chars)
 
 def update():
-    global name_input_time, show_name_cursor, entering_name
+    global name_input_time, show_name_cursor, entering_name, name_input, prev_pressed_keys
     
     # Handle name input
     if entering_name:
@@ -724,6 +923,15 @@ def update():
     if keyboard.n and not (landed or crashed):
         entering_name = True
         name_input = current_player_name
+        # Consume the initial 'n' press so it doesn't appear in the input.
+        # Also initialize per-key timing so it isn't treated as a held key that repeats immediately.
+        now = pygame.time.get_ticks()
+        try:
+            prev_pressed_keys.add('n')
+        except Exception:
+            prev_pressed_keys = set(['n'])
+        key_last_time['n'] = now
+        key_next_repeat['n'] = now + key_repeat_delay
         return
         
     if keyboard.r:
