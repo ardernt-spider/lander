@@ -6,7 +6,6 @@ Controls:
 - Left/Right arrows: rotate
 - Up arrow / Space: main thrust
 - N: Edit player name
-- C: Show/hide credits
 - R: Reset game
 - Esc: Quit
 
@@ -231,9 +230,6 @@ top_scores = load_scores()  # Load all scores
 mission_start_time = 0
 last_landing_stats = None  # To store stats of the last landing
 
-# Credits display state
-showing_credits = False
-
 # Sound state
 thrust_playing = False
 
@@ -264,6 +260,7 @@ FPS_SAMPLE_SIZE = 30  # Number of frames to average for FPS calculation
 HUD_LEFT_MARGIN = int(WIDTH * 0.02)  # 2% of screen width
 HUD_RIGHT_MARGIN = WIDTH - HUD_LEFT_MARGIN
 HUD_TOP_MARGIN = int(HEIGHT * 0.02)  # 2% of screen height
+HUD_BOTTOM_MARGIN = int(HEIGHT * 0.02)  # 2% of screen height
 HUD_LINE_SPACING = int(HEIGHT * 0.03)  # 3% of screen height for line spacing
 HUD_SECTION_SPACING = int(HEIGHT * 0.05)  # 5% for section spacing
 
@@ -754,39 +751,40 @@ def draw() -> None:
         draw_text_with_shadow(input_text, (255, 255, 255), (WIDTH/2, input_y + HUD_LINE_SPACING * 2), "center")
         draw_text_with_shadow("Press Enter to save, Esc to cancel", (150, 150, 150), (WIDTH/2, input_y + HUD_LINE_SPACING * 4), "center")
     
-    # Credits display
-    if showing_credits:
-        # Draw semi-transparent overlay
-        overlay = pygame.Surface((WIDTH, HEIGHT))
-        overlay.fill((0, 0, 0))
-        overlay.set_alpha(200)
-        DISPLAY.blit(overlay, (0, 0))
-
-        # Draw credits
-        y_pos = HEIGHT * 0.2
-        draw_text_with_shadow("CREDITS", (255, 255, 255), (WIDTH/2, y_pos), "center")
-        y_pos += HUD_SECTION_SPACING
+        draw_text_with_shadow("Press Enter to save, Esc to cancel", (150, 150, 150), (WIDTH/2, input_y + HUD_LINE_SPACING * 4), "center")
+    
+    # Credits display (always visible, small in bottom right)
+    credits_x = WIDTH - HUD_LEFT_MARGIN
+    credits_y = HEIGHT - HUD_BOTTOM_MARGIN
+    small_font_size = int(HEIGHT * 16/600)  # Smaller font for credits
+    small_font = pygame.font.SysFont(None, small_font_size)
+    
+    # Draw credits from bottom up
+    credits_lines = [
+        "\"Jazz 1\" by Francisco Alvear",
+        "Grok - sound & HUD",
+        "Claude Sonet4 - coregame", 
+        "GPT-5 mini - testing",
+        "Gemini Pro - coregame"
+    ]
+    
+    for i, line in enumerate(credits_lines):
+        # Use small font for credits
+        shadow_offset = 1
+        text_surface = small_font.render(line, True, (0, 0, 0))
+        text_lit = small_font.render(line, True, (120, 120, 120))
+        text_rect = text_surface.get_rect()
         
-        # Coding credits
-        draw_text_with_shadow("Coding:", (200, 200, 200), (WIDTH/2, y_pos), "center")
-        y_pos += HUD_LINE_SPACING
-        draw_text_with_shadow("-- coregame \"Gemini Pro\"", (180, 180, 180), (WIDTH/2, y_pos), "center")
-        y_pos += HUD_LINE_SPACING
-        draw_text_with_shadow("-- Testing and infra \"GPT-5 mini\"", (180, 180, 180), (WIDTH/2, y_pos), "center")
-        y_pos += HUD_LINE_SPACING
-        draw_text_with_shadow("-- coregame \"Claude Sonet4\"", (180, 180, 180), (WIDTH/2, y_pos), "center")
-        y_pos += HUD_LINE_SPACING
-        draw_text_with_shadow("-- sound effects and HUD \"Grok\"", (180, 180, 180), (WIDTH/2, y_pos), "center")
-        y_pos += HUD_SECTION_SPACING
+        text_rect.right = credits_x
+        text_rect.bottom = credits_y - i * int(small_font_size * 0.8)
         
-        # Music credits
-        draw_text_with_shadow("Background Music:", (200, 200, 200), (WIDTH/2, y_pos), "center")
-        y_pos += HUD_LINE_SPACING
-        draw_text_with_shadow("\"Jazz 1\" by Francisco Alvear", (180, 180, 180), (WIDTH/2, y_pos), "center")
-        y_pos += HUD_SECTION_SPACING
-        
-        # Instructions
-        draw_text_with_shadow("Press C to hide credits", (150, 150, 150), (WIDTH/2, y_pos), "center")
+        # Draw shadow first
+        shadow_rect = text_rect.copy()
+        shadow_rect.x += shadow_offset
+        shadow_rect.y += shadow_offset
+        DISPLAY.blit(text_surface, shadow_rect)
+        # Draw actual text
+        DISPLAY.blit(text_lit, text_rect)
     
     # HUD Layout
     left_margin = HUD_LEFT_MARGIN
@@ -948,12 +946,6 @@ def update() -> None:
     if keyboard.n and not (landed or crashed):
         # start input and consume the initial 'n' press so it doesn't appear
         text_input.start(current_player_name, consume_keys={'n'})
-        return
-
-    # Toggle credits display with C key
-    if keyboard.c:
-        global showing_credits
-        showing_credits = not showing_credits
         return
 
     if keyboard.r:
