@@ -660,7 +660,8 @@ def draw() -> None:
         y_pos_right = draw_text_with_shadow("Best: ", (200, 200, 200), (right_margin, y_pos_right), "right")
         for i, score_data in enumerate(top_scores[:3]):
             score_color = (255, 215, 0) if i == 0 else (192, 192, 192) if i == 1 else (205, 127, 50)  # Gold, Silver, Bronze
-            y_pos_right = draw_text_with_shadow(f"{score_data['score']}", score_color, (right_margin, y_pos_right), "right")
+            player_name = score_data.get('player', 'Unknown')
+            y_pos_right = draw_text_with_shadow(f"{score_data['score']} ({player_name})", score_color, (right_margin, y_pos_right), "right")
 
     if landed or crashed:
         # Semi-transparent overlay
@@ -705,11 +706,11 @@ def draw() -> None:
                 
                 # Compact score table
                 table_width = min(600, WIDTH * 0.8)  # Responsive table width
-                col_widths = [table_width * 0.15, table_width * 0.25, table_width * 0.3, table_width * 0.3]  # Rank, Score, Date, Time
+                col_widths = [table_width * 0.12, table_width * 0.18, table_width * 0.25, table_width * 0.25, table_width * 0.2]  # Rank, Score, Player, Date, Time
                 x_start = WIDTH/2 - table_width/2
                 
                 # Headers
-                headers = ["Rank", "Score", "Date", "Time"]
+                headers = ["Rank", "Score", "Player", "Date", "Time"]
                 x = x_start
                 for header, width in zip(headers, col_widths):
                     draw_text_with_shadow(header, (150, 150, 150), (x + width/2, y_pos), "center")
@@ -725,6 +726,7 @@ def draw() -> None:
                     date_obj = datetime.strptime(score_data['date'], "%Y-%m-%d %H:%M:%S")
                     date_str = date_obj.strftime("%Y-%m-%d")
                     time_str = date_obj.strftime("%H:%M")
+                    player_name = score_data.get('player', 'Unknown')
                     
                     # Highlight current score
                     row_color = (255, 215, 0) if score_data['score'] == stats['total'] else \
@@ -732,7 +734,7 @@ def draw() -> None:
                               (150, 150, 150)
                     
                     x = x_start
-                    cells = [f"#{i+1}", f"{score_data['score']}", date_str, time_str]
+                    cells = [f"#{i+1}", f"{score_data['score']}", player_name, date_str, time_str]
                     for cell, width in zip(cells, col_widths):
                         draw_text_with_shadow(cell, row_color, (x + width/2, y_pos), "center")
                         x += width
