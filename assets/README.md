@@ -1,3 +1,29 @@
+# Assets Directory
+
+This directory contains all the media assets for the Lunar Lander game.
+
+## Current Assets
+
+- `background.mp3` - Background music (Jazz 1 by Francisco Alvear)
+- `crash.wav` - Crash sound effect (placeholder - needs actual audio)
+- `thrust.wav` - Engine thrust sound effect (placeholder - needs actual audio)  
+- `landing.wav` - Successful landing sound effect (placeholder - needs actual audio)
+- `lander.png` - Lander sprite image
+- `icon.ico` - Application icon
+
+## Placeholder Files
+
+⚠️ **IMPORTANT**: The `crash.wav`, `thrust.wav`, and `landing.wav` files are currently placeholders containing text. You **MUST** replace them with actual audio files for the sound effects to work properly.
+
+To create proper sound effects:
+
+1. Use audio editing software like Audacity (free)
+2. Record or generate sound effects
+3. Export as WAV, OGG, or MP3 format
+4. Replace the placeholder files with your audio files
+
+The game will work without these files, but the sound effects won't play.
+
 # Background Music
 
 To add background music to the Lunar Lander game:
@@ -49,3 +75,35 @@ You can create sound effects using:
 - Royalty-free sound libraries
 
 The crash sound should be impactful but not too loud or startling.
+
+## Thrust Sound
+
+To add a thrust sound effect when the main engines fire:
+
+1. Create a looping audio file (WAV, OGG, or MP3 format)
+2. Name it `thrust.wav`, `thrust.ogg`, or `thrust.mp3`
+3. Place it in the `assets/` directory
+4. The game will automatically load and play it when thrusting
+
+## Thrust Sound Requirements
+
+- Format: WAV (preferred for sound effects), OGG, or MP3
+- Duration: Short loop (2-5 seconds recommended, will loop)
+- Volume: Will be played at 60% volume
+- If no thrust sound file is found, thrusting is silent
+
+## Landing Success Sound
+
+To add a success sound effect for successful landings:
+
+1. Create a short audio file (WAV, OGG, or MP3 format)
+2. Name it `landing.wav`, `landing.ogg`, or `landing.mp3`
+3. Place it in the `assets/` directory
+4. The game will automatically load and play it on successful landings
+
+## Landing Sound Requirements
+
+- Format: WAV (preferred for sound effects), OGG, or MP3
+- Duration: Short (1-3 seconds recommended)
+- Volume: Will be played at 80% volume
+- If no landing sound file is found, landings are silent

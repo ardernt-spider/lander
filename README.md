@@ -7,6 +7,20 @@ Requirements
 - Python 3.8+
 - Pygame Zero (install with pip)
 
+Credits:
+
+## Credits
+
+### Coding
+	-- coregame "Gemini Pro" 
+	-- Testing and infra "GPT-5 mini"
+	-- coregame "Claude Sonet4"
+	-- sound effects and HUD "Grok"
+
+### background.mp3
+Jazz 1
+by Francisco Alvear
+
 ## Development Setup
 
 1. Create and activate a virtual environment (recommended):
@@ -64,6 +78,7 @@ Controls
 - R: reset
 - N: enter player name (before landing)
 - Esc: quit
+- C: credits
 
 ## Assets
 

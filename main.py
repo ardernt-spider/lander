@@ -87,7 +87,59 @@ def load_crash_sound():
 
 # Load crash sound
 crash_sound = None
+thrust_sound = None
+landing_sound = None
 load_crash_sound()
+
+def load_thrust_sound():
+    """Load thrust sound effect if available."""
+    global thrust_sound
+    try:
+        # Try different formats in order of preference
+        sound_paths = [
+            os.path.join('assets', 'thrust.wav'),
+            os.path.join('assets', 'thrust.ogg'),
+            os.path.join('assets', 'thrust.mp3')
+        ]
+        for sound_path in sound_paths:
+            if os.path.exists(sound_path):
+                thrust_sound = pygame.mixer.Sound(sound_path)
+                thrust_sound.set_volume(0.6)  # Set volume to 60%
+                print(f"Thrust sound loaded: {sound_path}")
+                return
+        print("No thrust sound file found (looked for thrust.wav, thrust.ogg, or thrust.mp3)")
+        thrust_sound = None
+    except Exception as e:
+        print(f"Could not load thrust sound: {e}")
+        thrust_sound = None
+
+def load_landing_sound():
+    """Load landing success sound effect if available."""
+    global landing_sound
+    try:
+        # Try different formats in order of preference
+        sound_paths = [
+            os.path.join('assets', 'landing.wav'),
+            os.path.join('assets', 'landing.ogg'),
+            os.path.join('assets', 'landing.mp3')
+        ]
+        for sound_path in sound_paths:
+            if os.path.exists(sound_path):
+                landing_sound = pygame.mixer.Sound(sound_path)
+                landing_sound.set_volume(0.8)  # Set volume to 80%
+                print(f"Landing sound loaded: {sound_path}")
+                return
+        print("No landing sound file found (looked for landing.wav, landing.ogg, or landing.mp3)")
+        landing_sound = None
+    except Exception as e:
+        print(f"Could not load landing sound: {e}")
+        landing_sound = None
+
+# Load thrust and landing sounds
+thrust_sound = None
+landing_sound = None
+load_thrust_sound()
+load_landing_sound()
 
 pygame.font.init()
 
@@ -181,6 +233,9 @@ last_landing_stats = None  # To store stats of the last landing
 
 # Credits display state
 showing_credits = False
+
+# Sound state
+thrust_playing = False
 
 # Player name state
 current_player_name = load_player_name()
@@ -276,6 +331,11 @@ def reset() -> None:
     pad_x = random.randint(min_pad_margin, WIDTH - min_pad_margin - pad_width)
     # Restore background music volume to normal level
     pygame.mixer.music.set_volume(0.3)
+    # Stop thrust sound if playing
+    global thrust_playing
+    if thrust_sound and thrust_playing:
+        thrust_sound.stop()
+        thrust_playing = False
 
 
 def apply_physics(dt: float) -> None:
@@ -330,6 +390,17 @@ def apply_physics(dt: float) -> None:
         fuel -= BASE_THRUST_FUEL_RATE * dt
         if fuel < 0:
             fuel = 0.0
+        
+        # Start thrust sound if not already playing
+        global thrust_playing
+        if thrust_sound and not thrust_playing:
+            thrust_sound.play(-1)  # -1 means loop indefinitely
+            thrust_playing = True
+    else:
+        # Stop thrust sound if it was playing
+        if thrust_sound and thrust_playing:
+            thrust_sound.stop()
+            thrust_playing = False
 
     # Gravity
     lander_vel[1] += GRAVITY * dt
@@ -446,6 +517,9 @@ def check_collision() -> None:
             # Calculate score
             mission_time = pygame.time.get_ticks() - mission_start_time
             score = calculate_landing_score(vx, vy, lander_pos[0], mission_time)
+            # Play landing success sound if available
+            if landing_sound:
+                landing_sound.play()
         else:
             crashed = True
             alive = False
