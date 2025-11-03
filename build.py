@@ -10,6 +10,9 @@ import PyInstaller.__main__
 import os
 import shutil
 import pgzero
+import sys
+import subprocess
+import argparse
 
 # Get paths for required resources
 PGZERO_PATH = os.path.dirname(pgzero.__file__)
@@ -49,13 +52,31 @@ def build_game(debug=False):
     PyInstaller.__main__.run(cmd)
 
 if __name__ == '__main__':
+    parser = argparse.ArgumentParser(description='Build the Lunar Lander executables')
+    parser.add_argument('--bundle-vcruntime', action='store_true',
+                        help='After building, copy VC runtime DLLs into each dist/ folder')
+    args = parser.parse_args()
+
     # Clean old builds
     for dir_name in ['build', 'dist']:
         if os.path.exists(dir_name):
             shutil.rmtree(dir_name)
-    
+
     print("Building debug version...")
     build_game(debug=True)
     print("\nBuilding release version...")
     build_game(debug=False)
     print("\nBuild complete! Executables are in the 'dist' folder.")
+
+    # Optionally bundle VC runtime DLLs into dist/
+    if args.bundle_vcruntime:
+        # Call the bundling helper script.
+        bundler = os.path.join(os.path.dirname(__file__), 'tools', 'bundle_vcruntime.py')
+        if os.path.exists(bundler):
+            print('\nBundling VC runtime DLLs into dist/...')
+            try:
+                subprocess.check_call([sys.executable, bundler, '--dist', 'dist'])
+            except subprocess.CalledProcessError:
+                print('Bundling helper failed (non-zero exit)')
+        else:
+            print(f'Bundling helper not found: {bundler}')

@@ -10,10 +10,15 @@ Requirements
 ## Development Setup
 
 1. Create and activate a virtual environment (recommended):
+
 ```bash
-# Windows
+# Windows (PowerShell)
 python -m venv .venv
-.\.venv\Scripts\activate
+.\.venv\Scripts\Activate.ps1
+
+# Windows (cmd.exe)
+python -m venv .venv
+.\.venv\Scripts\activate.bat
 
 # Linux/macOS
 python -m venv .venv
@@ -21,18 +26,31 @@ source .venv/bin/activate
 ```
 
 2. Install dependencies:
+
 ```bash
 # Install runtime dependencies
 python -m pip install -r requirements.txt
 
-# Install development dependencies (tests, build tools)
+# (Optional) Install development dependencies (tests, build tools)
 python -m pip install -r requirements-dev.txt
 ```
 
 ## Running the Game
 
+You can run the game directly with Python (recommended when using the venv),
+or with Pygame Zero's runner if you prefer.
+
+Direct (run the game's main script):
+
 ```bash
-# preferred: uses the pgzrun script
+# Ensure your virtualenv is activated (see Development Setup)
+python main.py
+```
+
+Using Pygame Zero runner (alternative):
+
+```bash
+# preferred: uses the pgzrun script (installed by pgzero)
 pgzrun main.py
 
 # alternative if pgzrun isn't on PATH
@@ -95,14 +113,35 @@ ptw
 
 ## Build & Release
 
-Build a standalone executable:
+Build a standalone executable (Windows, using PyInstaller via the project's helper):
 
 ```bash
 # Make sure you have development dependencies installed
 python -m pip install -r requirements-dev.txt
-# run the build helper (uses PyInstaller via build.py)
-python .\build.py
-# built artifacts are written to the `dist\` folder
+
+# Build both debug (console) and release (windowed) executables
+python build.py
+
+# Build and bundle VC runtime DLLs into dist/ (recommended for portability)
+python build.py --bundle-vcruntime
+
+# Built artifacts are written to the `dist/` folder
+```
+
+Notes on running built artifacts:
+
+- Debug exe (prints console output):
+
+```powershell
+./dist/LunarLander-debug.exe
+# or on Windows cmd
+dist\LunarLander-debug.exe > game.log 2>&1
+```
+
+- Release exe (windowed, no console):
+
+```powershell
+./dist/LunarLander.exe
 ```
 
 ## Project TODO
