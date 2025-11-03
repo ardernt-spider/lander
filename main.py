@@ -15,6 +15,7 @@ import math
 import random
 import pygame
 import os
+import sys
 import pygame.font
 from pygame.locals import QUIT, KEYDOWN, KEYUP, K_ESCAPE
 from pgzero.keyboard import keyboard
@@ -28,7 +29,7 @@ from constants import (
 )
 
 # Asset helpers
-from assets import load_image
+from assets import load_image, resource_path
 
 # Persistence helpers
 from persistence import (
@@ -46,9 +47,9 @@ pygame.mixer.init()  # Initialize mixer for audio
 def load_background_music():
     """Load and start background music if available."""
     try:
-        music_path = os.path.join('assets', 'background.ogg')  # Try OGG first
+        music_path = resource_path(os.path.join('assets', 'background.ogg'))  # Try OGG first
         if not os.path.exists(music_path):
-            music_path = os.path.join('assets', 'background.mp3')  # Fallback to MP3
+            music_path = resource_path(os.path.join('assets', 'background.mp3'))  # Fallback to MP3
         if os.path.exists(music_path):
             pygame.mixer.music.load(music_path)
             pygame.mixer.music.play(-1)  # -1 means loop indefinitely
@@ -68,9 +69,9 @@ def load_crash_sound():
     try:
         # Try different formats in order of preference
         sound_paths = [
-            os.path.join('assets', 'crash.wav'),
-            os.path.join('assets', 'crash.ogg'),
-            os.path.join('assets', 'crash.mp3')
+            resource_path(os.path.join('assets', 'crash.wav')),
+            resource_path(os.path.join('assets', 'crash.ogg')),
+            resource_path(os.path.join('assets', 'crash.mp3'))
         ]
         for sound_path in sound_paths:
             if os.path.exists(sound_path):
@@ -96,9 +97,9 @@ def load_thrust_sound():
     try:
         # Try different formats in order of preference
         sound_paths = [
-            os.path.join('assets', 'thrust.wav'),
-            os.path.join('assets', 'thrust.ogg'),
-            os.path.join('assets', 'thrust.mp3')
+            resource_path(os.path.join('assets', 'thrust.wav')),
+            resource_path(os.path.join('assets', 'thrust.ogg')),
+            resource_path(os.path.join('assets', 'thrust.mp3'))
         ]
         for sound_path in sound_paths:
             if os.path.exists(sound_path):
@@ -118,9 +119,9 @@ def load_landing_sound():
     try:
         # Try different formats in order of preference
         sound_paths = [
-            os.path.join('assets', 'landing.wav'),
-            os.path.join('assets', 'landing.ogg'),
-            os.path.join('assets', 'landing.mp3')
+            resource_path(os.path.join('assets', 'landing.wav')),
+            resource_path(os.path.join('assets', 'landing.ogg')),
+            resource_path(os.path.join('assets', 'landing.mp3'))
         ]
         for sound_path in sound_paths:
             if os.path.exists(sound_path):
