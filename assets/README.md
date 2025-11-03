@@ -11,19 +11,6 @@ This directory contains all the media assets for the Lunar Lander game.
 - `lander.png` - Lander sprite image
 - `icon.ico` - Application icon
 
-## Placeholder Files
-
-⚠️ **IMPORTANT**: The `crash.wav`, `thrust.wav`, and `landing.wav` files are currently placeholders containing text. You **MUST** replace them with actual audio files for the sound effects to work properly.
-
-To create proper sound effects:
-
-1. Use audio editing software like Audacity (free)
-2. Record or generate sound effects
-3. Export as WAV, OGG, or MP3 format
-4. Replace the placeholder files with your audio files
-
-The game will work without these files, but the sound effects won't play.
-
 # Background Music
 
 To add background music to the Lunar Lander game:
