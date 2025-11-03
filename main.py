@@ -17,7 +17,7 @@ import pygame
 import os
 import sys
 import pygame.font
-from pygame.locals import QUIT, KEYDOWN, KEYUP, K_ESCAPE
+# redundant: removed "from pygame.locals import QUIT, KEYDOWN, KEYUP, K_ESCAPE"
 from pgzero.keyboard import keyboard
 from datetime import datetime
 from input_handler import TextInputHandler
@@ -76,7 +76,7 @@ def load_crash_sound():
         for sound_path in sound_paths:
             if os.path.exists(sound_path):
                 crash_sound = pygame.mixer.Sound(sound_path)
-                crash_sound.set_volume(0.9)  # Set volume to 90%
+                crash_sound.set_volume(0.6)  # Set volume to 60%
                 print(f"Crash sound loaded: {sound_path}")
                 return
         print("No crash sound file found (looked for crash.wav, crash.ogg, or crash.mp3)")
@@ -104,7 +104,7 @@ def load_thrust_sound():
         for sound_path in sound_paths:
             if os.path.exists(sound_path):
                 thrust_sound = pygame.mixer.Sound(sound_path)
-                thrust_sound.set_volume(0.6)  # Set volume to 60%
+                thrust_sound.set_volume(0.4)  # Set volume to 40%
                 print(f"Thrust sound loaded: {sound_path}")
                 return
         print("No thrust sound file found (looked for thrust.wav, thrust.ogg, or thrust.mp3)")
@@ -763,7 +763,7 @@ def draw() -> None:
     # Draw credits from bottom up
     credits_lines = [
         "\"Jazz 1\" by Francisco Alvear",
-        "Groq, sound & HUD",
+        "Grok, sound & HUD",
         "Claude Sonet, core game", 
         "GPT-5 mini, testing",
         "Gemini, core game"
@@ -773,7 +773,7 @@ def draw() -> None:
         # Use small font for credits
         shadow_offset = 1
         text_surface = small_font.render(line, True, (0, 0, 0))
-        text_lit = small_font.render(line, True, (120, 120, 120))
+        text_lit = small_font.render(line, True, (150, 120, 120))
         text_rect = text_surface.get_rect()
         
         text_rect.right = credits_x

@@ -15,7 +15,7 @@ Credits:
 	-- "Gemini Pro", core game  
 	-- "GPT-5 mini", testing and infra
 	-- "Claude Sonet4", core game
-	-- "Groq", sound effects and HUD 
+	-- "Grok", sound effects and HUD 
 
 ### background.mp3
 Jazz 1
