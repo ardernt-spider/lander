@@ -154,6 +154,17 @@ FPS_SAMPLE_SIZE = 30  # Number of frames to average for FPS calculation
 
 # HUD font sizes and title provided by constants
 
+# UI Layout Constants
+HUD_LEFT_MARGIN = int(WIDTH * 0.02)  # 2% of screen width
+HUD_RIGHT_MARGIN = WIDTH - HUD_LEFT_MARGIN
+HUD_TOP_MARGIN = int(HEIGHT * 0.02)  # 2% of screen height
+HUD_LINE_SPACING = int(HEIGHT * 0.03)  # 3% of screen height for line spacing
+HUD_SECTION_SPACING = int(HEIGHT * 0.05)  # 5% for section spacing
+
+# Table layout constants
+TABLE_COLUMN_SPACING = int(WIDTH * 0.05)  # 5% of screen width
+TABLE_ROW_SPACING = int(HEIGHT * 0.04)  # 4% of screen height
+
 def get_frame_time() -> float:
     """Get the time since last frame, capped to prevent physics glitches.
     
@@ -592,7 +603,7 @@ def draw() -> None:
         # Draw actual text
         DISPLAY.blit(text_lit, text_rect)
         
-        return text_rect.bottom + 5  # Return bottom position for next line
+        return text_rect.bottom + HUD_LINE_SPACING  # Use consistent line spacing
         
     # Name input dialog (delegated to TextInputHandler)
     if text_input.entering:
@@ -606,13 +617,13 @@ def draw() -> None:
         input_y = HEIGHT * 0.4
         draw_text_with_shadow("Enter Your Name:", (200, 200, 200), (WIDTH/2, input_y), "center")
         input_text = text_input.get_display_text()
-        draw_text_with_shadow(input_text, (255, 255, 255), (WIDTH/2, input_y + 40), "center")
-        draw_text_with_shadow("Press Enter to save, Esc to cancel", (150, 150, 150), (WIDTH/2, input_y + 80), "center")
+        draw_text_with_shadow(input_text, (255, 255, 255), (WIDTH/2, input_y + HUD_LINE_SPACING * 2), "center")
+        draw_text_with_shadow("Press Enter to save, Esc to cancel", (150, 150, 150), (WIDTH/2, input_y + HUD_LINE_SPACING * 4), "center")
     
     # HUD Layout
-    left_margin = 10
-    right_margin = WIDTH - 10
-    y_pos = 10
+    left_margin = HUD_LEFT_MARGIN
+    right_margin = HUD_RIGHT_MARGIN
+    y_pos = HUD_TOP_MARGIN
     
     # Title
     y_pos = draw_text_with_shadow(TITLE, (255, 255, 255), (left_margin, y_pos))
@@ -629,27 +640,27 @@ def draw() -> None:
     y_pos = draw_text_with_shadow(f"Angle: {lander_angle:.1f}°", angle_color, (left_margin, y_pos))
     
     # Right panel - Score & Performance
-    y_pos = 10
+    y_pos_right = HUD_TOP_MARGIN
     if not landed and not crashed:
         # Player name and controls
-        y_pos = draw_text_with_shadow(f"Pilot: {current_player_name}", (200, 200, 200), (right_margin, y_pos), "right")
-        y_pos = draw_text_with_shadow("Press N to change name", (150, 150, 150), (right_margin, y_pos), "right")
+        y_pos_right = draw_text_with_shadow(f"Pilot: {current_player_name}", (200, 200, 200), (right_margin, y_pos_right), "right")
+        y_pos_right = draw_text_with_shadow("Press N to change name", (150, 150, 150), (right_margin, y_pos_right), "right")
         
         mission_time = (pygame.time.get_ticks() - mission_start_time) // 1000
-        y_pos = draw_text_with_shadow(f"Mission Time: {mission_time}s", (200, 200, 200), (right_margin, y_pos), "right")
+        y_pos_right = draw_text_with_shadow(f"Mission Time: {mission_time}s", (200, 200, 200), (right_margin, y_pos_right), "right")
         
         current_fps = get_current_fps()
         fps_color = (0, 255, 0) if current_fps >= TARGET_FPS - 5 else \
                    (255, 255, 0) if current_fps >= TARGET_FPS - 15 else \
                    (255, 0, 0)
-        y_pos = draw_text_with_shadow(f"FPS: {current_fps:.1f}", fps_color, (right_margin, y_pos), "right")
+        y_pos_right = draw_text_with_shadow(f"FPS: {current_fps:.1f}", fps_color, (right_margin, y_pos_right), "right")
     
     # Top Scores - Compact display
     if top_scores:
-        y_pos = draw_text_with_shadow("Best: ", (200, 200, 200), (right_margin, y_pos), "right")
+        y_pos_right = draw_text_with_shadow("Best: ", (200, 200, 200), (right_margin, y_pos_right), "right")
         for i, score_data in enumerate(top_scores[:3]):
             score_color = (255, 215, 0) if i == 0 else (192, 192, 192) if i == 1 else (205, 127, 50)  # Gold, Silver, Bronze
-            y_pos = draw_text_with_shadow(f"{score_data['score']}", score_color, (right_margin, y_pos), "right")
+            y_pos_right = draw_text_with_shadow(f"{score_data['score']}", score_color, (right_margin, y_pos_right), "right")
 
     if landed or crashed:
         # Semi-transparent overlay
@@ -667,34 +678,34 @@ def draw() -> None:
             
             if last_landing_stats:
                 stats = last_landing_stats
-                y_pos += 20
+                y_pos += HUD_SECTION_SPACING
                 
                 # Current landing summary
                 total_color = (255, 215, 0)  # Gold color for total score
                 y_pos = draw_text_with_shadow(f"FINAL SCORE: {stats['total']}", total_color, (WIDTH/2, y_pos), "center")
-                y_pos += 10
+                y_pos += HUD_SECTION_SPACING
                 
                 # Breakdown in columns
-                col1_x = WIDTH/2 - 150
-                col2_x = WIDTH/2 + 150
+                col1_x = WIDTH/2 - 200
+                col2_x = WIDTH/2 + 200
                 row_y = y_pos
                 
                 # Left column
                 draw_text_with_shadow(f"Landing Speed: {stats['speed_value']:.1f}", (200, 200, 100), (col1_x, row_y), "center")
                 draw_text_with_shadow(f"Position Accuracy: {100 - (stats['distance']/(pad_width/2)*100):.0f}%", (200, 200, 100), (col2_x, row_y), "center")
-                row_y += 30
+                row_y += TABLE_ROW_SPACING
                 
                 draw_text_with_shadow(f"Fuel Remaining: {fuel:.0f}", (200, 200, 100), (col1_x, row_y), "center")
                 draw_text_with_shadow(f"Mission Time: {stats['mission_time']/1000:.1f}s", (200, 200, 100), (col2_x, row_y), "center")
                 
                 # Top Scores Table
-                y_pos = row_y + 50
+                y_pos = row_y + HUD_SECTION_SPACING
                 draw_text_with_shadow("HALL OF FAME", (255, 255, 255), (WIDTH/2, y_pos), "center")
-                y_pos += 30
+                y_pos += HUD_SECTION_SPACING
                 
                 # Compact score table
-                table_width = 400
-                col_widths = [50, 100, 150, 100]  # Rank, Score, Date, Time
+                table_width = min(600, WIDTH * 0.8)  # Responsive table width
+                col_widths = [table_width * 0.15, table_width * 0.25, table_width * 0.3, table_width * 0.3]  # Rank, Score, Date, Time
                 x_start = WIDTH/2 - table_width/2
                 
                 # Headers
@@ -704,7 +715,7 @@ def draw() -> None:
                     draw_text_with_shadow(header, (150, 150, 150), (x + width/2, y_pos), "center")
                     x += width
                 
-                y_pos += 25
+                y_pos += TABLE_ROW_SPACING
                 
                 # Score entries
                 for i, score_data in enumerate(top_scores[:5]):
@@ -726,7 +737,7 @@ def draw() -> None:
                         draw_text_with_shadow(cell, row_color, (x + width/2, y_pos), "center")
                         x += width
                     
-                    y_pos += 25
+                    y_pos += TABLE_ROW_SPACING
         
         if crashed:
             y_pos = draw_text_with_shadow("CRASHED!", (255, 0, 0), (WIDTH/2, y_pos), "center")
