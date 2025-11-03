@@ -6,6 +6,7 @@ Controls:
 - Left/Right arrows: rotate
 - Up arrow / Space: main thrust
 - N: Edit player name
+- C: Show/hide credits
 - R: Reset game
 - Esc: Quit
 
@@ -177,6 +178,9 @@ score = 0
 top_scores = load_scores()  # Load all scores
 mission_start_time = 0
 last_landing_stats = None  # To store stats of the last landing
+
+# Credits display state
+showing_credits = False
 
 # Player name state
 current_player_name = load_player_name()
@@ -676,6 +680,40 @@ def draw() -> None:
         draw_text_with_shadow(input_text, (255, 255, 255), (WIDTH/2, input_y + HUD_LINE_SPACING * 2), "center")
         draw_text_with_shadow("Press Enter to save, Esc to cancel", (150, 150, 150), (WIDTH/2, input_y + HUD_LINE_SPACING * 4), "center")
     
+    # Credits display
+    if showing_credits:
+        # Draw semi-transparent overlay
+        overlay = pygame.Surface((WIDTH, HEIGHT))
+        overlay.fill((0, 0, 0))
+        overlay.set_alpha(200)
+        DISPLAY.blit(overlay, (0, 0))
+
+        # Draw credits
+        y_pos = HEIGHT * 0.2
+        draw_text_with_shadow("CREDITS", (255, 255, 255), (WIDTH/2, y_pos), "center")
+        y_pos += HUD_SECTION_SPACING
+        
+        # Coding credits
+        draw_text_with_shadow("Coding:", (200, 200, 200), (WIDTH/2, y_pos), "center")
+        y_pos += HUD_LINE_SPACING
+        draw_text_with_shadow("-- coregame \"Gemini Pro\"", (180, 180, 180), (WIDTH/2, y_pos), "center")
+        y_pos += HUD_LINE_SPACING
+        draw_text_with_shadow("-- Testing and infra \"GPT-5 mini\"", (180, 180, 180), (WIDTH/2, y_pos), "center")
+        y_pos += HUD_LINE_SPACING
+        draw_text_with_shadow("-- coregame \"Claude Sonet4\"", (180, 180, 180), (WIDTH/2, y_pos), "center")
+        y_pos += HUD_LINE_SPACING
+        draw_text_with_shadow("-- sound effects and HUD \"Grok\"", (180, 180, 180), (WIDTH/2, y_pos), "center")
+        y_pos += HUD_SECTION_SPACING
+        
+        # Music credits
+        draw_text_with_shadow("Background Music:", (200, 200, 200), (WIDTH/2, y_pos), "center")
+        y_pos += HUD_LINE_SPACING
+        draw_text_with_shadow("\"Jazz 1\" by Francisco Alvear", (180, 180, 180), (WIDTH/2, y_pos), "center")
+        y_pos += HUD_SECTION_SPACING
+        
+        # Instructions
+        draw_text_with_shadow("Press C to hide credits", (150, 150, 150), (WIDTH/2, y_pos), "center")
+    
     # HUD Layout
     left_margin = HUD_LEFT_MARGIN
     right_margin = HUD_RIGHT_MARGIN
@@ -836,6 +874,12 @@ def update() -> None:
     if keyboard.n and not (landed or crashed):
         # start input and consume the initial 'n' press so it doesn't appear
         text_input.start(current_player_name, consume_keys={'n'})
+        return
+
+    # Toggle credits display with C key
+    if keyboard.c:
+        global showing_credits
+        showing_credits = not showing_credits
         return
 
     if keyboard.r:
