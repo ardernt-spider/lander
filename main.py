@@ -61,6 +61,33 @@ def load_background_music():
 
 # Load background music
 load_background_music()
+
+def load_crash_sound():
+    """Load crash sound effect if available."""
+    global crash_sound
+    try:
+        # Try different formats in order of preference
+        sound_paths = [
+            os.path.join('assets', 'crash.wav'),
+            os.path.join('assets', 'crash.ogg'),
+            os.path.join('assets', 'crash.mp3')
+        ]
+        for sound_path in sound_paths:
+            if os.path.exists(sound_path):
+                crash_sound = pygame.mixer.Sound(sound_path)
+                crash_sound.set_volume(0.7)  # Set volume to 70%
+                print(f"Crash sound loaded: {sound_path}")
+                return
+        print("No crash sound file found (looked for crash.wav, crash.ogg, or crash.mp3)")
+        crash_sound = None
+    except Exception as e:
+        print(f"Could not load crash sound: {e}")
+        crash_sound = None
+
+# Load crash sound
+crash_sound = None
+load_crash_sound()
+
 pygame.font.init()
 
 def get_screen_resolution() -> tuple[int, int]:
@@ -150,6 +177,9 @@ score = 0
 top_scores = load_scores()  # Load all scores
 mission_start_time = 0
 last_landing_stats = None  # To store stats of the last landing
+
+# Sound effects
+crash_sound = None
 
 # Player name state
 current_player_name = load_player_name()
@@ -420,6 +450,9 @@ def check_collision() -> None:
             lander_vel[1] = 0
             lander_pos[1] = surface_y - lander_size / 2
             score = 0  # No score for crashing
+            # Play crash sound if available
+            if crash_sound:
+                crash_sound.play()
 
 
 def draw_lander(surface: pygame.Surface) -> None:

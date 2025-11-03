@@ -22,3 +22,30 @@ You can create music using:
 - Royalty-free music libraries
 
 The music should be ambient/space-themed to fit the lunar landing theme.
+
+# Sound Effects
+
+## Crash Sound
+
+To add a crash sound effect when the lander crashes:
+
+1. Create a short audio file (WAV, OGG, or MP3 format)
+2. Name it `crash.wav`, `crash.ogg`, or `crash.mp3`
+3. Place it in the `assets/` directory
+4. The game will automatically load and play it when a crash occurs
+
+## Sound Effect Requirements
+
+- Format: WAV (preferred for sound effects), OGG, or MP3
+- Duration: Short (1-3 seconds recommended)
+- Volume: Will be played at 70% volume
+- If no crash sound file is found, crashes are silent
+
+## Creating Sound Effects
+
+You can create sound effects using:
+- Free tools like Audacity, LMMS, or BFXR
+- Online sound effect generators
+- Royalty-free sound libraries
+
+The crash sound should be impactful but not too loud or startling.
