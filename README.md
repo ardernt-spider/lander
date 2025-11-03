@@ -1,6 +1,6 @@
 # Lunar Lander (Pygame Zero)
 
-A small Lunar Lander clone implemented using Pygame Zero. The game draws the lander procedurally (no external assets).
+A small Lunar Lander clone implemented using Pygame Zero.
 
 Requirements
 
@@ -62,10 +62,23 @@ Controls
 - Left / Right: rotate
 - Up / Space: main thrust
 - R: reset
+- N: enter player name (before landing)
+- Esc: quit
 
-Notes
+## Assets
 
-- This is a small, educational demo. Feel free to request additions (sound, images, better landing detection, particles, scoring, levels).
+The game includes the following assets in the `assets/` directory:
+
+- `lander.png` - Lander sprite
+- `icon.ico` - Application icon
+- `background.ogg` or `background.mp3` - Background music (optional)
+
+### Background Music
+
+The game supports background music. Place an audio file named `background.ogg` or `background.mp3` in the `assets/` directory. The game will automatically load and play it in a loop at 30% volume.
+
+Supported formats: OGG, MP3
+If no music file is found, the game runs normally without music.
 
 ## Testing
 

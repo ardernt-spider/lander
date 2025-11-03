@@ -41,6 +41,26 @@ globals()['keyboard'] = keyboard
 
 # Initialize Pygame
 pygame.init()
+pygame.mixer.init()  # Initialize mixer for audio
+
+def load_background_music():
+    """Load and start background music if available."""
+    try:
+        music_path = os.path.join('assets', 'background.ogg')  # Try OGG first
+        if not os.path.exists(music_path):
+            music_path = os.path.join('assets', 'background.mp3')  # Fallback to MP3
+        if os.path.exists(music_path):
+            pygame.mixer.music.load(music_path)
+            pygame.mixer.music.play(-1)  # -1 means loop indefinitely
+            pygame.mixer.music.set_volume(0.3)  # Set volume to 30%
+            print(f"Background music loaded: {music_path}")
+        else:
+            print("No background music file found (looked for background.ogg or background.mp3)")
+    except Exception as e:
+        print(f"Could not load background music: {e}")
+
+# Load background music
+load_background_music()
 pygame.font.init()
 
 def get_screen_resolution() -> tuple[int, int]:
@@ -842,6 +862,7 @@ def main() -> None:
         clock.tick(TARGET_FPS)
 
     # Clean up
+    pygame.mixer.music.stop()  # Stop background music
     pygame.quit()
 
 if __name__ == '__main__':
