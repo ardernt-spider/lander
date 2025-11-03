@@ -763,10 +763,10 @@ def draw() -> None:
     # Draw credits from bottom up
     credits_lines = [
         "\"Jazz 1\" by Francisco Alvear",
-        "Grok - sound & HUD",
-        "Claude Sonet4 - coregame", 
-        "GPT-5 mini - testing",
-        "Gemini Pro - coregame"
+        "Groq, sound & HUD",
+        "Claude Sonet, core game", 
+        "GPT-5 mini, testing",
+        "Gemini, core game"
     ]
     
     for i, line in enumerate(credits_lines):
