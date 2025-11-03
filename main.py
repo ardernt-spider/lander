@@ -75,7 +75,7 @@ def load_crash_sound():
         for sound_path in sound_paths:
             if os.path.exists(sound_path):
                 crash_sound = pygame.mixer.Sound(sound_path)
-                crash_sound.set_volume(0.7)  # Set volume to 70%
+                crash_sound.set_volume(0.9)  # Set volume to 90%
                 print(f"Crash sound loaded: {sound_path}")
                 return
         print("No crash sound file found (looked for crash.wav, crash.ogg, or crash.mp3)")
@@ -178,9 +178,6 @@ top_scores = load_scores()  # Load all scores
 mission_start_time = 0
 last_landing_stats = None  # To store stats of the last landing
 
-# Sound effects
-crash_sound = None
-
 # Player name state
 current_player_name = load_player_name()
 # Text input handler (name editing)
@@ -273,6 +270,8 @@ def reset() -> None:
     mission_start_time = pygame.time.get_ticks()
     last_landing_stats = None
     pad_x = random.randint(min_pad_margin, WIDTH - min_pad_margin - pad_width)
+    # Restore background music volume to normal level
+    pygame.mixer.music.set_volume(0.3)
 
 
 def apply_physics(dt: float) -> None:
@@ -452,7 +451,11 @@ def check_collision() -> None:
             score = 0  # No score for crashing
             # Play crash sound if available
             if crash_sound:
+                # Temporarily lower background music volume for crash sound
+                original_music_volume = pygame.mixer.music.get_volume()
+                pygame.mixer.music.set_volume(0.1)  # Lower to 10%
                 crash_sound.play()
+                # Note: Music volume will be restored on next game reset
 
 
 def draw_lander(surface: pygame.Surface) -> None:
